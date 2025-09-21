@@ -1,5 +1,5 @@
 // EssentiaJS import for professional-grade audio analysis
-import { Essentia } from 'essentia.js/dist/essentia.js-core.es.js';
+import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 
 /**
  * Enhanced Web Audio API manager powered by EssentiaJS
