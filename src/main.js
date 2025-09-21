@@ -294,11 +294,23 @@ class TongueDrumApp {
       
       this.setProgress(30);
       
+      // Initialize EssentiaJS (async operation)
+      this.showStatus('Loading EssentiaJS audio analysis engine...', 'info');
+      const essentiaReady = await this.audioManager.initializeEssentia();
+      
+      if (essentiaReady) {
+        this.showStatus('EssentiaJS loaded! Professional-grade pitch detection ready...', 'success');
+      } else {
+        this.showStatus('Using Web Audio API fallback for pitch detection...', 'info');
+      }
+      
+      this.setProgress(40);
+      
       // Set up note detection callback
       this.audioManager.onNoteDetected((detection) => this.handleNoteDetection(detection));
       this.audioManager.onError((error) => this.showStatus(error, 'error'));
       
-      this.setProgress(50);
+      this.setProgress(60);
       
       // Update with current tongue frequencies
       if (this.drumVisualizer) {

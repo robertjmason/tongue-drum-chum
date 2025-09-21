@@ -1,5 +1,5 @@
-// EssentiaJS import - temporarily disabled to ensure Web Audio API fallback works
-// import Essentia from 'essentia.js';
+// EssentiaJS import for professional-grade audio analysis
+import Essentia from 'essentia.js';
 
 /**
  * Enhanced Web Audio API manager powered by EssentiaJS
@@ -34,17 +34,45 @@ export class AudioManager {
     this.bufferIndex = 0;
     this.bufferFilled = false;
     
-    this.initializeEssentia();
+    // Web Audio API fallback throttling
+    this.lastWebAudioAnalysis = 0;
+    this.webAudioThrottleMs = 50; // Analyze every 50ms for fallback
+    
+    // EssentiaJS initialization status
+    this.essentiaInitialized = false;
+    this.essentiaInitializing = false;
   }
 
   /**
    * Initialize EssentiaJS for advanced audio analysis
    */
   async initializeEssentia() {
-    // EssentiaJS temporarily disabled - using reliable Web Audio API fallback
-    console.log('🎵 Using Web Audio API for pitch detection (EssentiaJS integration in progress)');
-    this.essentia = null;
-    return Promise.resolve();
+    if (this.essentiaInitializing || this.essentiaInitialized) return this.essentiaInitialized;
+    
+    this.essentiaInitializing = true;
+    
+    try {
+      console.log('🎵 Initializing EssentiaJS for professional audio analysis...');
+      
+      // Initialize Essentia with proper configuration
+      this.essentia = new Essentia();
+      
+      // Verify EssentiaJS is ready
+      if (this.essentia && typeof this.essentia.Windowing === 'function') {
+        console.log('✅ EssentiaJS successfully initialized!');
+        this.essentiaInitialized = true;
+        this.essentiaInitializing = false;
+        return true;
+      } else {
+        throw new Error('EssentiaJS methods not available');
+      }
+    } catch (error) {
+      console.warn('⚠️ EssentiaJS initialization failed, using Web Audio API fallback:', error);
+      this.essentia = null;
+      this.essentiaInitialized = false;
+      this.essentiaInitializing = false;
+      return false;
+    }
   }
 
   /**
@@ -134,21 +162,31 @@ export class AudioManager {
    * Process real-time audio frames for pitch detection
    */
   processAudioFrame(inputData) {
-    if (!this.essentia || !this.isListening) return;
+    if (!this.isListening) return;
 
-    // Fill audio buffer
-    const framesToCopy = Math.min(inputData.length, this.audioBuffer.length - this.bufferIndex);
-    for (let i = 0; i < framesToCopy; i++) {
-      this.audioBuffer[this.bufferIndex + i] = inputData[i];
-    }
-    
-    this.bufferIndex += framesToCopy;
-    
-    // When buffer is full, analyze it
-    if (this.bufferIndex >= this.audioBuffer.length) {
-      this.bufferFilled = true;
-      this.bufferIndex = 0;
-      this.analyzeAudioBuffer();
+    // If EssentiaJS is available, use it for frame-by-frame analysis
+    if (this.essentia) {
+      // Fill audio buffer for EssentiaJS analysis
+      const framesToCopy = Math.min(inputData.length, this.audioBuffer.length - this.bufferIndex);
+      for (let i = 0; i < framesToCopy; i++) {
+        this.audioBuffer[this.bufferIndex + i] = inputData[i];
+      }
+      
+      this.bufferIndex += framesToCopy;
+      
+      // When buffer is full, analyze it with EssentiaJS
+      if (this.bufferIndex >= this.audioBuffer.length) {
+        this.bufferFilled = true;
+        this.bufferIndex = 0;
+        this.analyzeAudioBuffer();
+      }
+    } else {
+      // Fallback to Web Audio API analysis with throttling
+      const now = Date.now();
+      if (now - this.lastWebAudioAnalysis >= this.webAudioThrottleMs) {
+        this.lastWebAudioAnalysis = now;
+        this.analyzeWithWebAudio();
+      }
     }
   }
 
@@ -179,20 +217,44 @@ export class AudioManager {
   analyzeWithEssentia() {
     try {
       // Apply windowing to reduce spectral leakage
-      const windowedSignal = this.essentia.Windowing(this.audioBuffer, 'hann', true, true);
+      const windowedSignal = this.essentia.Windowing(this.audioBuffer, 'hann');
       
-      // Compute FFT spectrum
+      // Compute FFT spectrum for spectral analysis
       const spectrum = this.essentia.Spectrum(windowedSignal);
       
-      // Detect pitch using YIN algorithm
-      const pitchYinResult = this.essentia.PitchYin(this.audioBuffer, 0.1);
-      const pitchYin = pitchYinResult.pitch;
+      // Detect pitch using YIN algorithm (more accurate for monophonic instruments like tongue drums)
+      const pitchYin = this.essentia.PitchYin(this.audioBuffer, 0.15); // Slightly higher threshold for drums
       
-      if (pitchYin && pitchYin > 50 && pitchYin < 2000) {
-        this.processPitchDetection(pitchYin, spectrum);
+      // Also try PitchYinFFT for comparison (works better for some frequencies)
+      let pitchYinFFT = null;
+      try {
+        pitchYinFFT = this.essentia.PitchYinFFT(this.audioBuffer, 4096, 0.15);
+      } catch (fftError) {
+        console.log('PitchYinFFT not available, using PitchYin only');
+      }
+      
+      // Find spectral peaks for harmonic analysis
+      const spectralPeaks = this.essentia.SpectralPeaks(spectrum);
+      
+      // Use the most reliable pitch estimate
+      let finalPitch = pitchYin;
+      if (pitchYinFFT && Math.abs(pitchYinFFT - pitchYin) < 20) {
+        // If both algorithms agree (within 20Hz), average them
+        finalPitch = (pitchYin + pitchYinFFT) / 2;
+      } else if (pitchYinFFT && pitchYin === 0) {
+        // If YIN failed but YinFFT has a result
+        finalPitch = pitchYinFFT;
+      }
+      
+      if (finalPitch && finalPitch > 50 && finalPitch < 2000) {
+        this.processPitchDetection(finalPitch, {
+          frequency: spectralPeaks.frequency || [],
+          magnitude: spectralPeaks.magnitude || [],
+          confidence: 0.8 // EssentiaJS provides high confidence
+        });
       }
     } catch (error) {
-      console.warn('EssentiaJS analysis failed, falling back to basic analysis:', error);
+      console.warn('EssentiaJS analysis failed, falling back to Web Audio API:', error);
       this.analyzeWithWebAudio();
     }
   }
