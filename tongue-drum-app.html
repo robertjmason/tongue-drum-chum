@@ -1,0 +1,2467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Tongue Drum Notation Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .setup-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .setup-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .auto-detect {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .detect-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .detect-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .detect-instructions {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .manual-config {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .config-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        select, input, button {
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .drum-layouts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .layout-option {
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .layout-option:hover, .layout-option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+
+        .status.listening { background: #c6f6d5; color: #22543d; border: 2px solid #9ae6b4; }
+        .status.error { background: #fed7d7; color: #742a2a; border: 2px solid #fc8181; }
+        .status.inactive { background: #e2e8f0; color: #4a5568; border: 2px solid #cbd5e0; }
+        .status.detecting { background: #bee3f8; color: #2a69ac; border: 2px solid #90cdf4; }
+
+        .drum-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            min-height: 400px;
+        }
+
+        .drum-visual {
+            position: relative;
+            background: radial-gradient(circle, #f7fafc 0%, #e2e8f0 100%);
+            border-radius: 50%;
+            border: 8px solid #4a5568;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1), 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .drum-8 { width: 300px; height: 300px; }
+        .drum-9 { width: 350px; height: 350px; }
+        .drum-11 { width: 400px; height: 400px; }
+        .drum-13 { width: 450px; height: 450px; }
+        .drum-15 { width: 500px; height: 500px; }
+
+        .tongue {
+            position: absolute;
+            background: linear-gradient(145deg, #e2e8f0, #cbd5e0);
+            border-radius: 15px;
+            border: 2px solid #a0aec0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #2d3748;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .tongue-8 { width: 35px; height: 50px; font-size: 14px; }
+        .tongue-9 { width: 38px; height: 55px; font-size: 15px; }
+        .tongue-11 { width: 40px; height: 60px; font-size: 16px; }
+        .tongue-13 { width: 42px; height: 65px; font-size: 17px; }
+        .tongue-15 { width: 44px; height: 70px; font-size: 18px; }
+
+        .tongue:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .tongue.playing {
+            background: linear-gradient(145deg, #48bb78, #38a169);
+            color: white;
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(72, 187, 120, 0.6);
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        .tongue.next {
+            background: linear-gradient(145deg, #ed8936, #dd6b20);
+            color: white;
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        .center-note {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #667eea, #5a67d8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            border: 3px solid #4c51bf;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+
+        .center-8 { width: 60px; height: 60px; font-size: 20px; }
+        .center-9 { width: 70px; height: 70px; font-size: 22px; }
+        .center-11 { width: 80px; height: 80px; font-size: 24px; }
+        .center-13 { width: 90px; height: 90px; font-size: 26px; }
+        .center-15 { width: 100px; height: 100px; font-size: 28px; }
+
+        @keyframes pulse {
+            0% { transform: scale(1.2); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1.2); }
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px rgba(237, 137, 54, 0.5); }
+            to { box-shadow: 0 0 20px rgba(237, 137, 54, 0.8); }
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .file-input input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .detection-results {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .detected-notes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .detected-note {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+
+        .detected-note.confirmed {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .audio-info {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .audio-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .notation-display {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .notation-line {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            font-size: 18px;
+            line-height: 1.5;
+            flex-wrap: wrap;
+        }
+
+        .note {
+            display: inline-block;
+            margin: 2px 3px;
+            padding: 5px 8px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            transition: all 0.3s ease;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .note.current {
+            background: #48bb78;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .note.next {
+            background: #ed8936;
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        /* Visual Notation Builder Styles */
+        .notation-builder {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .builder-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .builder-header h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .tongue-selector {
+            margin-bottom: 30px;
+        }
+
+        .selector-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .selector-tongue {
+            position: relative;
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .selector-tongue:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .selector-tongue.selected {
+            background: linear-gradient(145deg, #667eea, #5a67d8);
+            color: white;
+            border-color: #4c51bf;
+        }
+
+        .tongue-number {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .octave-controls {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .octave-btn {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .octave-btn:hover {
+            background: #f1f3f4;
+        }
+
+        .octave-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .notation-sequence {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .sequence-container {
+            min-height: 80px;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .empty-sequence {
+            color: #6c757d;
+            font-style: italic;
+            width: 100%;
+            text-align: center;
+        }
+
+        .sequence-note {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 10px 15px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .sequence-note:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .sequence-note.playing {
+            background: #48bb78;
+            color: white;
+            border-color: #38a169;
+        }
+
+        .note-number {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .note-octave {
+            position: absolute;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .note-octave.high {
+            top: 2px;
+            right: 4px;
+            color: #e53e3e;
+        }
+
+        .note-octave.low {
+            bottom: 2px;
+            right: 4px;
+            color: #3182ce;
+        }
+
+        .note-remove {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 18px;
+            height: 18px;
+            background: #e53e3e;
+            color: white;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 10px;
+            display: none;
+        }
+
+        .sequence-note:hover .note-remove {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .builder-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .builder-controls button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        #playSequence {
+            background: #48bb78;
+            color: white;
+        }
+
+        #playSequence:hover {
+            background: #38a169;
+        }
+
+        #clearSequence {
+            background: #e53e3e;
+            color: white;
+        }
+
+        #clearSequence:hover {
+            background: #c53030;
+        }
+
+        #exportSequence {
+            background: #667eea;
+            color: white;
+        }
+
+        #exportSequence:hover {
+            background: #5a67d8;
+        }
+
+        #closeBuilder {
+            background: #6c757d;
+            color: white;
+        }
+
+        #closeBuilder:hover {
+            background: #5a6268;
+        }
+
+        /* Layout Builder Styles */
+        .layout-builder {
+            text-align: center;
+        }
+
+        .layout-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .layout-controls button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        #resetLayout {
+            background: #6c757d;
+            color: white;
+        }
+
+        #loadPhoto {
+            background: #17a2b8;
+            color: white;
+        }
+
+        #saveLayout {
+            background: #28a745;
+            color: white;
+        }
+
+        #pandaLayout {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .layout-canvas {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            margin: 20px auto;
+            border: 3px solid #dee2e6;
+            border-radius: 50%;
+            background: #f8f9fa;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .layout-background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .canvas-instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .draggable-tongue {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(145deg, #667eea, #5a67d8);
+            border: 3px solid #4c51bf;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            transition: all 0.3s ease;
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .draggable-tongue:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .draggable-tongue.dragging {
+            transform: scale(1.2);
+            z-index: 20;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        }
+
+        .layout-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .layout-info ul {
+            margin-left: 20px;
+            line-height: 1.6;
+        }
+
+        .photo-upload {
+            display: none;
+        }
+
+        .drum-photo-preview {
+            max-width: 100%;
+            max-height: 400px;
+            margin: 15px 0;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🥁 Advanced Tongue Drum Notation Player</h1>
+            <p>Auto-detect your drum configuration or manually configure for any tongue drum</p>
+        </div>
+
+        <div class="setup-panel">
+            <div class="setup-tabs">
+                <button class="tab active" data-tab="auto">Auto-Detect Drum</button>
+                <button class="tab" data-tab="manual">Manual Configuration</button>
+                <button class="tab" data-tab="presets">Common Presets</button>
+                <button class="tab" data-tab="layout">Custom Layout</button>
+            </div>
+
+            <div class="tab-content active" id="auto-tab">
+                <div class="auto-detect">
+                    <h3>Automatic Drum Detection</h3>
+                    <p>Play each tongue on your drum to automatically detect the configuration</p>
+                    
+                    <div style="background: #e3f2fd; border-radius: 8px; padding: 15px; margin: 15px 0; border-left: 4px solid #2196f3;">
+                        <h4 style="margin-bottom: 8px; color: #1976d2;">🔐 Microphone Permission Required</h4>
+                        <p style="margin: 0; color: #1976d2;">This feature needs access to your microphone to hear your drum. Your browser will ask for permission when you click "Start Auto-Detection".</p>
+                    </div>
+                    
+                    <button class="detect-button" id="startDetection">🎯 Start Auto-Detection</button>
+                    
+                    <div class="detect-instructions">
+                        <h4>Instructions:</h4>
+                        <ol style="text-align: left; margin-left: 50px;">
+                            <li>Click "Start Auto-Detection" and allow microphone access</li>
+                            <li>Play each tongue on your drum one by one</li>
+                            <li>The app will detect the pitch and map your drum layout</li>
+                            <li>Play tongues multiple times for better accuracy</li>
+                            <li>When done, the app will determine your drum's key and note count</li>
+                        </ol>
+                    </div>
+
+                    <div class="detection-results" id="detectionResults" style="display: none;">
+                        <h4>Detected Configuration:</h4>
+                        <div id="detectedInfo">
+                            <p><strong>Number of Notes:</strong> <span id="detectedCount">0</span></p>
+                            <p><strong>Detected Key:</strong> <span id="detectedKey">Unknown</span></p>
+                            <p><strong>Scale Type:</strong> <span id="detectedScale">Unknown</span></p>
+                        </div>
+                        <div class="detected-notes" id="detectedNotes"></div>
+                        <button id="confirmDetection" style="margin-top: 15px; background: #48bb78; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">✓ Use This Configuration</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="manual-tab">
+                <div class="manual-config">
+                    <div class="config-group">
+                        <label for="noteCount">Number of Notes</label>
+                        <select id="noteCount">
+                            <option value="8">8 Notes</option>
+                            <option value="9">9 Notes</option>
+                            <option value="11">11 Notes</option>
+                            <option value="13">13 Notes</option>
+                            <option value="15" selected>15 Notes</option>
+                            <option value="17">17 Notes</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="drumKey">Drum Key</label>
+                        <select id="drumKey">
+                            <option value="C">C Major</option>
+                            <option value="D" selected>D Major</option>
+                            <option value="E">E Major</option>
+                            <option value="F">F Major</option>
+                            <option value="G">G Major</option>
+                            <option value="A">A Major</option>
+                            <option value="B">B Major</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="scaleType">Scale Type</label>
+                        <select id="scaleType">
+                            <option value="major" selected>Major Scale</option>
+                            <option value="pentatonic_major">Pentatonic Major</option>
+                            <option value="pentatonic_minor">Pentatonic Minor</option>
+                            <option value="natural_minor">Natural Minor</option>
+                            <option value="akebono">Akebono</option>
+                            <option value="hijaz">Hijaz</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="rootOctave">Root Octave</label>
+                        <select id="rootOctave">
+                            <option value="3">3rd Octave</option>
+                            <option value="4" selected>4th Octave</option>
+                            <option value="5">5th Octave</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="applyManualConfig" style="margin-top: 20px; background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">Apply Configuration</button>
+            </div>
+
+            <div class="tab-content" id="presets-tab">
+                <h3>Common Drum Configurations</h3>
+                <div class="drum-layouts">
+                    <div class="layout-option" data-preset="rav-d9">
+                        <strong>RAV Vast D Major</strong><br>
+                        9 Notes<br>
+                        <small>D3 G3 A3 B3 C#4 D4 E4 F#4 A4</small>
+                    </div>
+                    <div class="layout-option" data-preset="hapi-c8">
+                        <strong>HAPI C Major</strong><br>
+                        8 Notes<br>
+                        <small>C4 D4 E4 F4 G4 A4 B4 C5</small>
+                    </div>
+                    <div class="layout-option" data-preset="panda-d15">
+                        <strong>Panda Drum D Major</strong><br>
+                        15 Notes<br>
+                        <small>Custom asymmetric layout</small>
+                    </div>
+                    <div class="layout-option" data-preset="akebono-e11">
+                        <strong>Akebono E</strong><br>
+                        11 Notes<br>
+                        <small>Japanese pentatonic</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="layout-tab">
+                <div class="layout-builder">
+                    <h3>🎨 Custom Drum Layout Builder</h3>
+                    <p>Click and drag to position tongues exactly like your physical drum</p>
+                    
+                    <div class="layout-controls">
+                        <button id="resetLayout">🔄 Reset to Circle</button>
+                        <button id="loadPhoto">📷 Upload Drum Photo</button>
+                        <button id="saveLayout">💾 Save Layout</button>
+                        <button id="pandaLayout">🐼 Load Panda Drum Layout</button>
+                    </div>
+                    
+                    <div class="layout-canvas" id="layoutCanvas">
+                        <div class="layout-background" id="layoutBackground">
+                            <div class="canvas-instructions">
+                                Drag tongue numbers to match your drum layout
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="layout-info">
+                        <h4>Instructions:</h4>
+                        <ul>
+                            <li>Drag the numbered circles to match your drum's tongue positions</li>
+                            <li>Upload a photo of your drum as a background guide</li>
+                            <li>Use preset layouts for popular drums</li>
+                            <li>Save your custom layout for future use</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="status" class="status inactive">
+                🔧 Configure your drum above, then start listening for real-time detection
+                <div style="font-size: 0.9em; margin-top: 8px; opacity: 0.8;">
+                    💡 <strong>No microphone access?</strong> Try the Visual Builder (📝), click drum tongues, or use demo mode! Microphone features require HTTPS.
+                </div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="controls">
+                <div class="config-group">
+                    <label>Upload Notation File</label>
+                    <div class="file-input">
+                        <input type="file" id="fileInput" accept=".txt,.json,.xml">
+                        Choose File
+                    </div>
+                </div>
+
+                <div class="config-group">
+                    <button id="startButton" disabled>🎤 Start Listening</button>
+                    <small style="color: #666; margin-top: 5px; display: block;">Requires HTTPS for microphone</small>
+                </div>
+
+                <div class="config-group">
+                    <button id="toggleBuilder">📝 Build Notation</button>
+                    <small style="color: #666; margin-top: 5px; display: block;">Works offline!</small>
+                </div>
+
+                <div class="config-group">
+                    <button id="testMicrophone">🔧 Test Microphone</button>
+                    <small style="color: #666; margin-top: 5px; display: block;">Check setup</small>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Visual Notation Builder -->
+        <div class="notation-builder" id="notationBuilder" style="display: none;">
+            <div class="builder-header">
+                <h3>🎵 Visual Notation Builder</h3>
+                <p>Click tongue numbers to add notes, use arrows to change octaves</p>
+            </div>
+            
+            <div class="tongue-selector">
+                <div class="selector-grid" id="tongueSelector">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+            
+            <div class="notation-sequence" id="notationSequence">
+                <h4>Your Sequence:</h4>
+                <div class="sequence-container" id="sequenceContainer">
+                    <div class="empty-sequence">Click tongue numbers above to start building your song!</div>
+                </div>
+            </div>
+            
+            <div class="builder-controls">
+                <button id="playSequence">▶️ Play Sequence</button>
+                <button id="clearSequence">🗑️ Clear All</button>
+                <button id="exportSequence">💾 Use This Sequence</button>
+                <button id="closeBuilder">❌ Close Builder</button>
+            </div>
+        </div>
+
+        <div class="notation-area">
+            <div class="drum-container">
+                <div class="drum-visual drum-15" id="drumVisual">
+                    <div class="center-note center-15" id="centerNote">0</div>
+                    <!-- Tongues will be dynamically generated -->
+                </div>
+            </div>
+
+            <div class="notation-display" id="notationDisplay">
+                <div class="notation-line">
+                    <strong>Sample 15-Note D Major Sequence:</strong>
+                    <span class="note">1</span><span class="note">3</span><span class="note">5</span><span class="note">7</span><span class="note">9</span>
+                    <span class="note">11</span><span class="note">13</span><span class="note">15</span><span class="note">13</span><span class="note">11</span>
+                    <span class="note">9</span><span class="note">7</span><span class="note">5</span><span class="note">3</span><span class="note">1</span>
+                </div>
+                <div class="notation-line" style="margin-top: 10px;">
+                    <strong>With Octave Markings:</strong>
+                    <span class="note">1</span><span class="note">3^</span><span class="note">5</span><span class="note">7v</span><span class="note">9^</span>
+                    <span class="note">11</span><span class="note">13^</span><span class="note">15v</span><span class="note">13</span><span class="note">11^</span>
+                </div>
+                <div style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                    Click any tongue number on the drum above to test, or try the Visual Builder!
+                </div>
+            </div>
+        </div>
+
+        <div class="audio-info">
+            <h3 style="margin-bottom: 20px; text-align: center;">Real-Time Audio Analysis</h3>
+            <div class="audio-metrics">
+                <div class="metric">
+                    <div class="metric-value" id="frequencyValue">---</div>
+                    <div class="metric-label">Frequency (Hz)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="noteValue">---</div>
+                    <div class="metric-label">Detected Note</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="tongueValue">---</div>
+                    <div class="metric-label">Tongue Number</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="confidenceValue">---</div>
+                    <div class="metric-label">Confidence</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="drumInfoValue">15-Note D Major</div>
+                    <div class="metric-label">Drum Configuration</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for photo uploads -->
+    <input type="file" id="photoUpload" class="photo-upload" accept="image/*">
+
+    <script>
+        class AdvancedTongueDrumApp {
+            constructor() {
+                this.audioContext = null;
+                this.analyser = null;
+                this.microphone = null;
+                this.isListening = false;
+                this.isDetecting = false;
+                this.currentNoteIndex = 0;
+                this.notation = [1, 3, 5, 7, 9, 11, 13, 15, 13, 11, 9, 7, 5, 3, 1];
+                
+                // Visual builder state
+                this.builderSequence = [];
+                this.selectedOctave = 'middle'; // 'high', 'middle', 'low'
+                this.isBuilderOpen = false;
+                this.isPlayingSequence = false;
+                
+                // Default to 15-note D major configuration
+                this.drumConfig = {
+                    noteCount: 15,
+                    key: 'D',
+                    scaleType: 'major',
+                    rootOctave: 4
+                };
+                
+                // Custom layout system
+                this.customLayout = null;
+                this.isLayoutMode = false;
+                this.draggedElement = null;
+                
+                this.detectedNotes = new Map();
+                this.drumMapping = this.createDrumMapping();
+                this.lastDetectedTime = 0;
+                this.detectionCooldown = 500;
+
+                this.initializeElements();
+                this.setupEventListeners();
+                this.updateDrumConfiguration();
+                this.checkFeatureAvailability();
+            }
+
+            checkFeatureAvailability() {
+                const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '0.0.0.0';
+                const hasMicrophone = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+                
+                if (!isSecure || !hasMicrophone) {
+                    // Disable microphone features but keep app functional
+                    this.elements.startButton.disabled = true;
+                    this.elements.startDetection.disabled = true;
+                    this.elements.testMicrophone.disabled = true;
+                    
+                    let reason = '';
+                    if (!isSecure) reason = 'HTTPS required for microphone access';
+                    else if (!hasMicrophone) reason = 'Microphone not supported';
+                    
+                    this.updateStatus('inactive', `🔧 Configured for ${this.drumConfig.noteCount}-note ${this.drumConfig.key} major drum. ${reason}, but Visual Builder and manual features work great!`);
+                } else {
+                    this.updateStatus('inactive', `🔧 All features available! Configured for ${this.drumConfig.noteCount}-note ${this.drumConfig.key} major drum.`);
+                }
+            }
+
+            initializeElements() {
+                this.elements = {
+                    tabs: document.querySelectorAll('.tab'),
+                    tabContents: document.querySelectorAll('.tab-content'),
+                    startDetection: document.getElementById('startDetection'),
+                    startButton: document.getElementById('startButton'),
+                    status: document.getElementById('status'),
+                    noteCount: document.getElementById('noteCount'),
+                    drumKey: document.getElementById('drumKey'),
+                    scaleType: document.getElementById('scaleType'),
+                    rootOctave: document.getElementById('rootOctave'),
+                    applyManualConfig: document.getElementById('applyManualConfig'),
+                    confirmDetection: document.getElementById('confirmDetection'),
+                    fileInput: document.getElementById('fileInput'),
+                    progressFill: document.getElementById('progressFill'),
+                    frequencyValue: document.getElementById('frequencyValue'),
+                    noteValue: document.getElementById('noteValue'),
+                    tongueValue: document.getElementById('tongueValue'),
+                    confidenceValue: document.getElementById('confidenceValue'),
+                    drumInfoValue: document.getElementById('drumInfoValue'),
+                    notationDisplay: document.getElementById('notationDisplay'),
+                    drumVisual: document.getElementById('drumVisual'),
+                    centerNote: document.getElementById('centerNote'),
+                    detectionResults: document.getElementById('detectionResults'),
+                    detectedCount: document.getElementById('detectedCount'),
+                    detectedKey: document.getElementById('detectedKey'),
+                    detectedScale: document.getElementById('detectedScale'),
+                    detectedNotes: document.getElementById('detectedNotes'),
+                    // Builder elements
+                    toggleBuilder: document.getElementById('toggleBuilder'),
+                    testMicrophone: document.getElementById('testMicrophone'),
+                    notationBuilder: document.getElementById('notationBuilder'),
+                    tongueSelector: document.getElementById('tongueSelector'),
+                    sequenceContainer: document.getElementById('sequenceContainer'),
+                    playSequence: document.getElementById('playSequence'),
+                    clearSequence: document.getElementById('clearSequence'),
+                    exportSequence: document.getElementById('exportSequence'),
+                    closeBuilder: document.getElementById('closeBuilder'),
+                    // Layout builder elements
+                    layoutCanvas: document.getElementById('layoutCanvas'),
+                    layoutBackground: document.getElementById('layoutBackground'),
+                    resetLayout: document.getElementById('resetLayout'),
+                    loadPhoto: document.getElementById('loadPhoto'),
+                    saveLayout: document.getElementById('saveLayout'),
+                    pandaLayout: document.getElementById('pandaLayout')
+                };
+            }
+
+            setupEventListeners() {
+                // Tab switching
+                this.elements.tabs.forEach(tab => {
+                    tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
+                });
+
+                // Control buttons
+                this.elements.startDetection.addEventListener('click', () => this.startAutoDetection());
+                this.elements.startButton.addEventListener('click', () => this.toggleListening());
+                this.elements.applyManualConfig.addEventListener('click', () => this.applyManualConfiguration());
+                this.elements.confirmDetection.addEventListener('click', () => this.confirmAutoDetection());
+
+                // Builder buttons
+                this.elements.toggleBuilder.addEventListener('click', () => this.toggleNotationBuilder());
+                this.elements.testMicrophone.addEventListener('click', () => this.testMicrophone());
+                this.elements.playSequence.addEventListener('click', () => this.playBuilderSequence());
+                this.elements.clearSequence.addEventListener('click', () => this.clearBuilderSequence());
+                this.elements.exportSequence.addEventListener('click', () => this.exportBuilderSequence());
+                this.elements.closeBuilder.addEventListener('click', () => this.closeNotationBuilder());
+
+                // Layout builder buttons
+                this.elements.resetLayout.addEventListener('click', () => this.resetLayout());
+                this.elements.loadPhoto.addEventListener('click', () => this.loadDrumPhoto());
+                this.elements.saveLayout.addEventListener('click', () => this.saveCustomLayout());
+                this.elements.pandaLayout.addEventListener('click', () => this.loadPandaLayout());
+
+                // Configuration changes
+                this.elements.noteCount.addEventListener('change', () => this.updateDrumConfiguration());
+                this.elements.drumKey.addEventListener('change', () => this.updateDrumConfiguration());
+                this.elements.scaleType.addEventListener('change', () => this.updateDrumConfiguration());
+                this.elements.rootOctave.addEventListener('change', () => this.updateDrumConfiguration());
+
+                // File upload
+                this.elements.fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+
+                // Preset selection
+                document.querySelectorAll('.layout-option').forEach(option => {
+                    option.addEventListener('click', () => this.selectPreset(option.dataset.preset));
+                });
+            }
+
+            switchTab(tabName) {
+                this.elements.tabs.forEach(tab => tab.classList.remove('active'));
+                this.elements.tabContents.forEach(content => content.classList.remove('active'));
+                
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+                
+                // Set layout mode when switching to layout tab
+                this.isLayoutMode = (tabName === 'layout');
+                
+                if (this.isLayoutMode) {
+                    // Switch to layout canvas instead of regular drum visual
+                    this.elements.drumVisual.style.display = 'none';
+                    if (this.elements.layoutCanvas) {
+                        this.generateLayoutCanvas();
+                    }
+                } else {
+                    // Show regular drum visual
+                    this.elements.drumVisual.style.display = 'block';
+                    this.updateDrumVisual();
+                }
+            }
+
+            generateLayoutCanvas() {
+                const canvas = this.elements.layoutCanvas;
+                
+                // Clear existing draggable tongues
+                const existingTongues = canvas.querySelectorAll('.draggable-tongue');
+                existingTongues.forEach(tongue => tongue.remove());
+                
+                // Generate draggable tongues
+                for (let i = 1; i <= this.drumConfig.noteCount; i++) {
+                    const tongue = document.createElement('div');
+                    tongue.className = 'draggable-tongue';
+                    tongue.dataset.tongue = i;
+                    tongue.textContent = i;
+                    
+                    // Use custom position if available, otherwise default circular
+                    if (this.customLayout && this.customLayout.positions[i]) {
+                        tongue.style.left = this.customLayout.positions[i].x + 'px';
+                        tongue.style.top = this.customLayout.positions[i].y + 'px';
+                    } else {
+                        // Default circular positioning
+                        const angle = (2 * Math.PI * (i - 1)) / this.drumConfig.noteCount - Math.PI / 2;
+                        const radius = (canvas.offsetWidth / 2) - 60;
+                        const x = canvas.offsetWidth / 2 + Math.cos(angle) * radius - 25;
+                        const y = canvas.offsetHeight / 2 + Math.sin(angle) * radius - 25;
+                        
+                        tongue.style.left = x + 'px';
+                        tongue.style.top = y + 'px';
+                    }
+                    
+                    canvas.appendChild(tongue);
+                }
+                
+                this.initializeDragAndDrop();
+            }
+
+            createDrumMapping() {
+                const scalePatterns = {
+                    'major': [0, 2, 4, 5, 7, 9, 11],
+                    'pentatonic_major': [0, 2, 4, 7, 9],
+                    'pentatonic_minor': [0, 3, 5, 7, 10],
+                    'natural_minor': [0, 2, 3, 5, 7, 8, 10],
+                    'akebono': [0, 2, 3, 7, 8],
+                    'hijaz': [0, 1, 4, 5, 7, 8, 11]
+                };
+
+                const noteToSemitones = {
+                    'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5,
+                    'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11
+                };
+
+                return { scalePatterns, noteToSemitones };
+            }
+
+            updateDrumConfiguration() {
+                this.drumConfig = {
+                    noteCount: parseInt(this.elements.noteCount.value),
+                    key: this.elements.drumKey.value,
+                    scaleType: this.elements.scaleType.value,
+                    rootOctave: parseInt(this.elements.rootOctave.value)
+                };
+
+                this.calculateTongueFrequencies();
+                this.updateDrumVisual();
+                this.updateDrumInfo();
+                this.elements.startButton.disabled = false;
+            }
+
+            calculateTongueFrequencies() {
+                const pattern = this.drumMapping.scalePatterns[this.drumConfig.scaleType];
+                const rootSemitones = this.drumMapping.noteToSemitones[this.drumConfig.key];
+                const baseOctave = this.drumConfig.rootOctave;
+                
+                this.tongueFrequencies = {};
+                
+                for (let i = 1; i <= this.drumConfig.noteCount; i++) {
+                    let octaveOffset = Math.floor((i - 1) / pattern.length);
+                    let scaleDegree = (i - 1) % pattern.length;
+                    
+                    // For larger drums, extend the range more intelligently
+                    if (this.drumConfig.noteCount > 8) {
+                        // Spread notes across multiple octaves
+                        octaveOffset = Math.floor((i - 1) / (pattern.length / 1.5));
+                        scaleDegree = Math.round(((i - 1) % pattern.length) * (pattern.length / Math.max(1, pattern.length - 2)));
+                        scaleDegree = Math.min(scaleDegree, pattern.length - 1);
+                    }
+                    
+                    const semitones = rootSemitones + pattern[scaleDegree] + (octaveOffset * 12);
+                    const octave = baseOctave + Math.floor(semitones / 12);
+                    const noteInOctave = semitones % 12;
+                    
+                    // Calculate frequency: A4 = 440Hz
+                    const frequency = 440 * Math.pow(2, (semitones - 9 + (octave - 4) * 12) / 12);
+                    this.tongueFrequencies[i] = frequency;
+                }
+            }
+
+            updateDrumVisual() {
+                const visual = this.elements.drumVisual;
+                const noteCount = this.drumConfig.noteCount;
+                
+                // Update drum size class
+                visual.className = `drum-visual drum-${noteCount}`;
+                
+                // Update center note
+                this.elements.centerNote.className = `center-note center-${noteCount}`;
+                
+                // Clear existing tongues
+                const existingTongues = visual.querySelectorAll('.tongue, .draggable-tongue');
+                existingTongues.forEach(tongue => tongue.remove());
+                
+                // Generate new tongues with custom layout if available
+                if (this.customLayout && this.isLayoutMode) {
+                    this.generateCustomLayout();
+                } else {
+                    this.generateTongueLayout(noteCount);
+                }
+                
+                // Initialize drag and drop if we're in layout mode
+                if (this.isLayoutMode) {
+                    this.initializeDragAndDrop();
+                }
+            }
+
+            generateCustomLayout() {
+                const visual = this.elements.drumVisual;
+                const positions = this.customLayout.positions;
+                
+                for (let i = 1; i <= this.drumConfig.noteCount; i++) {
+                    const tongue = document.createElement('div');
+                    tongue.className = this.isLayoutMode ? 'draggable-tongue' : `tongue tongue-${this.drumConfig.noteCount}`;
+                    tongue.dataset.tongue = i;
+                    tongue.textContent = i;
+                    
+                    // Use custom position if available, otherwise default
+                    if (positions[i]) {
+                        tongue.style.left = positions[i].x + 'px';
+                        tongue.style.top = positions[i].y + 'px';
+                    } else {
+                        // Fallback to circular positioning
+                        const angle = (2 * Math.PI * (i - 1)) / this.drumConfig.noteCount - Math.PI / 2;
+                        const radius = visual.offsetWidth / 2 - 50;
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+                        
+                        tongue.style.left = `calc(50% + ${x}px - 25px)`;
+                        tongue.style.top = `calc(50% + ${y}px - 25px)`;
+                    }
+                    
+                    if (!this.isLayoutMode) {
+                        tongue.addEventListener('click', () => {
+                            this.simulateNoteDetection(i);
+                        });
+                    }
+                    
+                    visual.appendChild(tongue);
+                }
+            }
+
+            generateTongueLayout(noteCount) {
+                const visual = this.elements.drumVisual;
+                const radius = visual.offsetWidth / 2 - 50; // Account for padding and tongue size
+                
+                for (let i = 1; i <= noteCount; i++) {
+                    const tongue = document.createElement('div');
+                    tongue.className = `tongue tongue-${noteCount}`;
+                    tongue.dataset.tongue = i;
+                    tongue.textContent = i;
+                    
+                    // Calculate position in circle
+                    const angle = (2 * Math.PI * (i - 1)) / noteCount - Math.PI / 2; // Start at top
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    
+                    tongue.style.left = `calc(50% + ${x}px - ${tongue.offsetWidth || 22}px)`;
+                    tongue.style.top = `calc(50% + ${y}px - ${tongue.offsetHeight || 35}px)`;
+                    
+                    tongue.addEventListener('click', () => {
+                        this.simulateNoteDetection(i);
+                    });
+                    
+                    visual.appendChild(tongue);
+                }
+            }
+
+            updateDrumInfo() {
+                const config = this.drumConfig;
+                this.elements.drumInfoValue.textContent = 
+                    `${config.noteCount}-Note ${config.key} ${config.scaleType.replace('_', ' ')}`;
+            }
+
+            async startAutoDetection() {
+                try {
+                    // Check microphone availability first
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error('Microphone not supported in this browser. Please use Chrome, Firefox, or Safari.');
+                    }
+
+                    // Check if we're on HTTPS or localhost
+                    const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '0.0.0.0';
+                    
+                    if (!isSecure) {
+                        this.showHTTPSWarning();
+                        return;
+                    }
+
+                    this.updateStatus('detecting', '🔐 Requesting microphone permission...');
+                    
+                    this.isDetecting = true;
+                    this.detectedNotes.clear();
+                    this.elements.startDetection.textContent = '🛑 Stop Detection';
+                    
+                    await this.initializeAudio();
+                    this.startDetectionAnalysis();
+                    
+                } catch (error) {
+                    console.error('Error starting detection:', error);
+                    this.isDetecting = false;
+                    this.elements.startDetection.textContent = '🎯 Start Auto-Detection';
+                    
+                    if (error.name === 'NotAllowedError') {
+                        this.showPermissionHelp();
+                    } else if (error.name === 'NotFoundError') {
+                        this.updateStatus('error', '❌ No microphone found. Please connect a microphone and try again.');
+                    } else {
+                        this.updateStatus('error', `❌ ${error.message}`);
+                    }
+                }
+            }
+
+            showHTTPSWarning() {
+                const helpMessage = `
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 15px 0;">
+                        <h4 style="color: #856404; margin-bottom: 15px;">🔒 HTTPS Required for Microphone Access</h4>
+                        <p style="color: #856404; margin-bottom: 15px;">Your browser requires a secure (HTTPS) connection to access the microphone. You have several options:</p>
+                        
+                        <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                            <h5 style="color: #495057; margin-bottom: 10px;">💡 Easy Solutions:</h5>
+                            <ol style="color: #495057; margin-left: 20px; line-height: 1.6;">
+                                <li><strong>Use the Visual Builder</strong> - Create notation by clicking (no microphone needed)</li>
+                                <li><strong>Upload notation files</strong> - Load your songs from text files</li>
+                                <li><strong>Manual drum configuration</strong> - Set your drum specs manually</li>
+                                <li><strong>Click drum tongues</strong> - Test detection by clicking the visual drum</li>
+                            </ol>
+                        </div>
+                        
+                        <div style="background: #e3f2fd; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                            <h5 style="color: #1976d2; margin-bottom: 10px;">🌐 For Full Microphone Features:</h5>
+                            <ul style="color: #1976d2; margin-left: 20px; line-height: 1.6;">
+                                <li><strong>Save this HTML file</strong> to your computer and open it locally</li>
+                                <li><strong>Use a local web server</strong> (like Live Server in VS Code)</li>
+                                <li><strong>Deploy to a secure hosting service</strong> (GitHub Pages, Netlify, etc.)</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button onclick="app.startDemoMode()" style="background: #48bb78; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer;">🎮 Try Demo Mode</button>
+                            <button onclick="app.switchTab('manual')" style="background: #667eea; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer;">⚙️ Manual Setup</button>
+                            <button onclick="app.toggleNotationBuilder()" style="background: #ed8936; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer;">📝 Visual Builder</button>
+                        </div>
+                    </div>
+                `;
+                
+                this.elements.status.innerHTML = helpMessage;
+                this.elements.status.className = 'status error';
+            }
+
+            async testMicrophone() {
+                this.elements.testMicrophone.textContent = '🔄 Testing...';
+                this.elements.testMicrophone.disabled = true;
+                
+                try {
+                    // Show browser and current page info
+                    const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '0.0.0.0';
+                    const browser = this.detectBrowser();
+                    
+                    this.updateStatus('detecting', `🔍 Testing microphone access...\nBrowser: ${browser}\nSecure: ${isSecure ? 'Yes' : 'No - HTTPS required'}`);
+                    
+                    if (!isSecure) {
+                        this.showHTTPSWarning();
+                        return;
+                    }
+                    
+                    // Test basic microphone access
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: { 
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false 
+                        } 
+                    });
+                    
+                    // Test audio processing
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const analyser = audioContext.createAnalyser();
+                    source.connect(analyser);
+                    
+                    // Quick audio level test
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+                    
+                    let testFrames = 0;
+                    let hasAudio = false;
+                    
+                    const testAudio = () => {
+                        analyser.getByteFrequencyData(dataArray);
+                        const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+                        
+                        if (average > 10) hasAudio = true;
+                        testFrames++;
+                        
+                        if (testFrames < 30) { // Test for ~1 second
+                            requestAnimationFrame(testAudio);
+                        } else {
+                            // Clean up
+                            stream.getTracks().forEach(track => track.stop());
+                            audioContext.close();
+                            
+                            if (hasAudio) {
+                                this.updateStatus('listening', '✅ Microphone test successful! Your microphone is working and detecting audio.');
+                            } else {
+                                this.updateStatus('inactive', '⚠️ Microphone connected but no audio detected. Try speaking or making noise near your microphone.');
+                            }
+                        }
+                    };
+                    
+                    testAudio();
+                    
+                } catch (error) {
+                    console.error('Microphone test failed:', error);
+                    
+                    if (error.name === 'NotAllowedError') {
+                        this.showPermissionHelp();
+                    } else if (error.name === 'NotFoundError') {
+                        this.updateStatus('error', '❌ No microphone found. Please connect a microphone and try again.');
+                    } else {
+                        this.updateStatus('error', `❌ Microphone test failed: ${error.message}`);
+                    }
+                } finally {
+                    this.elements.testMicrophone.textContent = '🔧 Test Microphone';
+                    this.elements.testMicrophone.disabled = false;
+                }
+            }
+
+            detectBrowser() {
+                const userAgent = navigator.userAgent;
+                if (userAgent.includes('Chrome')) return 'Chrome';
+                if (userAgent.includes('Firefox')) return 'Firefox';
+                if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) return 'Safari';
+                if (userAgent.includes('Edge')) return 'Edge';
+                return 'Unknown';
+            }
+
+            async initializeAudio() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                        sampleRate: 44100
+                    }
+                });
+
+                this.microphone = this.audioContext.createMediaStreamSource(stream);
+                this.analyser = this.audioContext.createAnalyser();
+                this.analyser.fftSize = 8192; // Higher resolution for better pitch detection
+                this.analyser.smoothingTimeConstant = 0.1;
+
+                this.microphone.connect(this.analyser);
+            }
+
+            startDetectionAnalysis() {
+                if (!this.isDetecting) return;
+
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Float32Array(bufferLength);
+
+                const analyze = () => {
+                    if (!this.isDetecting) return;
+
+                    this.analyser.getFloatTimeDomainData(dataArray);
+                    
+                    const pitch = this.detectPitch(dataArray);
+                    
+                    if (pitch > 50) { // Valid pitch range
+                        this.recordDetectedNote(pitch);
+                        this.updateDetectionDisplay();
+                    }
+
+                    requestAnimationFrame(analyze);
+                };
+
+                analyze();
+            }
+
+            detectPitch(audioBuffer) {
+                // Enhanced YIN algorithm for better accuracy
+                const sampleRate = this.audioContext.sampleRate;
+                const threshold = 0.1;
+                const probabilityThreshold = 0.01;
+                
+                const W = audioBuffer.length;
+                const tau_max = Math.floor(W / 2);
+                
+                // Calculate difference function
+                const d = new Float32Array(tau_max);
+                for (let tau = 0; tau < tau_max; tau++) {
+                    let sum = 0;
+                    for (let i = 0; i < W - tau_max; i++) {
+                        const delta = audioBuffer[i] - audioBuffer[i + tau];
+                        sum += delta * delta;
+                    }
+                    d[tau] = sum;
+                }
+                
+                // Cumulative mean normalized difference
+                const d_prime = new Float32Array(tau_max);
+                d_prime[0] = 1;
+                
+                for (let tau = 1; tau < tau_max; tau++) {
+                    let sum = 0;
+                    for (let j = 1; j <= tau; j++) {
+                        sum += d[j];
+                    }
+                    d_prime[tau] = d[tau] / (sum / tau);
+                }
+                
+                // Find minimum below threshold
+                let tau = 1;
+                while (tau < tau_max && d_prime[tau] > threshold) {
+                    tau++;
+                }
+                
+                if (tau >= tau_max) return 0;
+                
+                // Parabolic interpolation for sub-sample accuracy
+                if (tau > 0 && tau < tau_max - 1) {
+                    const x0 = d_prime[tau - 1];
+                    const x1 = d_prime[tau];
+                    const x2 = d_prime[tau + 1];
+                    
+                    const a = (x0 - 2 * x1 + x2) / 2;
+                    const b = (x2 - x0) / 2;
+                    
+                    if (a !== 0) {
+                        tau = tau - b / (2 * a);
+                    }
+                }
+                
+                const frequency = sampleRate / tau;
+                
+                // Validate frequency is in reasonable range for tongue drums
+                return (frequency >= 50 && frequency <= 2000) ? frequency : 0;
+            }
+
+            recordDetectedNote(frequency) {
+                const now = Date.now();
+                if (now - this.lastDetectedTime < 200) return; // Debounce
+                
+                this.lastDetectedTime = now;
+                
+                // Round frequency to nearest Hz for grouping
+                const roundedFreq = Math.round(frequency);
+                
+                if (!this.detectedNotes.has(roundedFreq)) {
+                    this.detectedNotes.set(roundedFreq, {
+                        frequency: frequency,
+                        count: 1,
+                        note: this.frequencyToNote(frequency),
+                        lastSeen: now
+                    });
+                } else {
+                    const existing = this.detectedNotes.get(roundedFreq);
+                    existing.count++;
+                    existing.lastSeen = now;
+                    // Update frequency with running average
+                    existing.frequency = (existing.frequency + frequency) / 2;
+                }
+            }
+
+            updateDetectionDisplay() {
+                const results = this.elements.detectionResults;
+                const notesContainer = this.elements.detectedNotes;
+                
+                results.style.display = 'block';
+                notesContainer.innerHTML = '';
+                
+                // Sort detected notes by frequency
+                const sortedNotes = Array.from(this.detectedNotes.values())
+                    .filter(note => note.count >= 2) // Require at least 2 detections
+                    .sort((a, b) => a.frequency - b.frequency);
+                
+                this.elements.detectedCount.textContent = sortedNotes.length;
+                
+                // Analyze detected notes to determine key and scale
+                if (sortedNotes.length >= 3) {
+                    const analysis = this.analyzeDetectedNotes(sortedNotes);
+                    this.elements.detectedKey.textContent = analysis.key || 'Unknown';
+                    this.elements.detectedScale.textContent = analysis.scale || 'Unknown';
+                }
+                
+                // Display detected notes
+                sortedNotes.forEach((note, index) => {
+                    const noteElement = document.createElement('div');
+                    noteElement.className = `detected-note ${note.count >= 3 ? 'confirmed' : ''}`;
+                    noteElement.innerHTML = `
+                        <strong>${index + 1}</strong><br>
+                        ${note.note}<br>
+                        ${note.frequency.toFixed(1)}Hz<br>
+                        <small>${note.count} detections</small>
+                    `;
+                    notesContainer.appendChild(noteElement);
+                });
+            }
+
+            analyzeDetectedNotes(notes) {
+                // Simple analysis to determine most likely key and scale
+                const frequencies = notes.map(n => n.frequency);
+                
+                // Convert to MIDI note numbers
+                const midiNotes = frequencies.map(f => Math.round(69 + 12 * Math.log2(f / 440)));
+                
+                // Find the most likely root note by analyzing intervals
+                const possibleKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+                let bestMatch = { key: null, scale: null, score: 0 };
+                
+                for (const key of possibleKeys) {
+                    for (const scaleType of ['major', 'pentatonic_major', 'natural_minor']) {
+                        const score = this.scoreKeyMatch(midiNotes, key, scaleType);
+                        if (score > bestMatch.score) {
+                            bestMatch = { key, scale: scaleType, score };
+                        }
+                    }
+                }
+                
+                return bestMatch;
+            }
+
+            scoreKeyMatch(midiNotes, key, scaleType) {
+                const keyOffset = this.drumMapping.noteToSemitones[key];
+                const pattern = this.drumMapping.scalePatterns[scaleType];
+                
+                let score = 0;
+                const expectedNotes = new Set();
+                
+                // Generate expected notes for this key/scale across multiple octaves
+                for (let octave = 2; octave <= 6; octave++) {
+                    for (const interval of pattern) {
+                        expectedNotes.add(keyOffset + interval + (octave * 12));
+                    }
+                }
+                
+                // Score based on how many detected notes match expected notes
+                for (const midiNote of midiNotes) {
+                    if (expectedNotes.has(midiNote % 12 + 60)) { // Normalize to 5th octave
+                        score++;
+                    }
+                }
+                
+                return score / midiNotes.length; // Normalize by total detected notes
+            }
+
+            confirmAutoDetection() {
+                const sortedNotes = Array.from(this.detectedNotes.values())
+                    .filter(note => note.count >= 2)
+                    .sort((a, b) => a.frequency - b.frequency);
+                
+                if (sortedNotes.length < 3) {
+                    alert('Please detect at least 3 notes before confirming configuration.');
+                    return;
+                }
+                
+                // Update configuration based on detection
+                this.drumConfig.noteCount = sortedNotes.length;
+                
+                const analysis = this.analyzeDetectedNotes(sortedNotes);
+                if (analysis.key) {
+                    this.drumConfig.key = analysis.key;
+                }
+                if (analysis.scale) {
+                    this.drumConfig.scaleType = analysis.scale;
+                }
+                
+                // Stop detection
+                this.isDetecting = false;
+                this.elements.startDetection.textContent = '🎯 Start Auto-Detection';
+                
+                // Update UI
+                this.elements.noteCount.value = this.drumConfig.noteCount;
+                this.elements.drumKey.value = this.drumConfig.key;
+                this.elements.scaleType.value = this.drumConfig.scaleType;
+                
+                this.updateDrumConfiguration();
+                this.updateStatus('inactive', `✅ Auto-detection complete! Configured for ${this.drumConfig.noteCount}-note ${this.drumConfig.key} ${this.drumConfig.scaleType.replace('_', ' ')} drum.`);
+                
+                // Switch to manual tab to show results
+                this.switchTab('manual');
+            }
+
+            applyManualConfiguration() {
+                this.updateDrumConfiguration();
+                this.updateStatus('inactive', `✅ Manual configuration applied: ${this.drumConfig.noteCount}-note ${this.drumConfig.key} ${this.drumConfig.scaleType.replace('_', ' ')} drum.`);
+            }
+
+            selectPreset(presetName) {
+                // Remove selection from other presets
+                document.querySelectorAll('.layout-option').forEach(opt => opt.classList.remove('selected'));
+                event.target.classList.add('selected');
+                
+                const presets = {
+                    'rav-d9': { noteCount: 9, key: 'D', scaleType: 'major', rootOctave: 3 },
+                    'hapi-c8': { noteCount: 8, key: 'C', scaleType: 'major', rootOctave: 4 },
+                    'panda-d15': { noteCount: 15, key: 'D', scaleType: 'major', rootOctave: 4 },
+                    'akebono-e11': { noteCount: 11, key: 'E', scaleType: 'akebono', rootOctave: 4 }
+                };
+                
+                const preset = presets[presetName];
+                if (preset) {
+                    this.drumConfig = { ...preset };
+                    
+                    // Update form elements
+                    this.elements.noteCount.value = preset.noteCount;
+                    this.elements.drumKey.value = preset.key;
+                    this.elements.scaleType.value = preset.scaleType;
+                    this.elements.rootOctave.value = preset.rootOctave;
+                    
+                    this.updateDrumConfiguration();
+                    this.updateStatus('inactive', `✅ Preset applied: ${preset.noteCount}-note ${preset.key} ${preset.scaleType.replace('_', ' ')} drum.`);
+                }
+            }
+
+            async toggleListening() {
+                if (!this.isListening) {
+                    await this.startListening();
+                } else {
+                    this.stopListening();
+                }
+            }
+
+            async startListening() {
+                try {
+                    // Check microphone availability first
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error('Microphone not supported in this browser. Please use Chrome, Firefox, or Safari.');
+                    }
+
+                    // Check if we're on HTTPS or localhost
+                    const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '0.0.0.0';
+                    
+                    if (!isSecure) {
+                        this.showHTTPSWarning();
+                        return;
+                    }
+
+                    this.updateStatus('detecting', '🔐 Requesting microphone permission...');
+
+                    if (!this.audioContext) {
+                        await this.initializeAudio();
+                    }
+
+                    this.isListening = true;
+                    this.elements.startButton.textContent = '🔇 Stop Listening';
+                    this.updateStatus('listening', '🎤 Listening for notes... Play your tongue drum!');
+
+                    this.startPlaybackAnalysis();
+
+                } catch (error) {
+                    console.error('Error starting audio:', error);
+                    this.isListening = false;
+                    this.elements.startButton.textContent = '🎤 Start Listening';
+                    
+                    if (error.name === 'NotAllowedError') {
+                        this.showPermissionHelp();
+                    } else if (error.name === 'NotFoundError') {
+                        this.updateStatus('error', '❌ No microphone found. Please connect a microphone and try again.');
+                    } else {
+                        this.updateStatus('error', `❌ ${error.message}`);
+                    }
+                }
+            }
+
+            showPermissionHelp() {
+                const helpMessage = `
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 15px 0;">
+                        <h4 style="color: #856404; margin-bottom: 15px;">🔒 Microphone Permission Needed</h4>
+                        <p style="color: #856404; margin-bottom: 10px;"><strong>To fix this:</strong></p>
+                        <ol style="color: #856404; margin-left: 20px;">
+                            <li><strong>Look for a microphone icon</strong> in your browser's address bar</li>
+                            <li><strong>Click it and select "Allow"</strong></li>
+                            <li><strong>Or refresh the page</strong> and click "Allow" when prompted</li>
+                            <li><strong>Chrome:</strong> Click the 🔒 lock icon → Site settings → Microphone → Allow</li>
+                            <li><strong>Firefox:</strong> Click the 🛡️ shield icon → Allow microphone</li>
+                            <li><strong>Safari:</strong> Safari menu → Settings → Websites → Microphone → Allow</li>
+                        </ol>
+                        <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; margin-top: 10px; cursor: pointer;">🔄 Refresh Page</button>
+                    </div>
+                `;
+                
+                this.elements.status.innerHTML = helpMessage;
+                this.elements.status.className = 'status error';
+            }
+
+            stopListening() {
+                this.isListening = false;
+                this.elements.startButton.textContent = '🎤 Start Listening';
+                this.updateStatus('inactive', '🔇 Audio detection inactive. Click "Start Listening" to begin.');
+                
+                this.clearVisualizations();
+            }
+
+            startPlaybackAnalysis() {
+                if (!this.isListening) return;
+
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Float32Array(bufferLength);
+
+                const analyze = () => {
+                    if (!this.isListening) return;
+
+                    this.analyser.getFloatTimeDomainData(dataArray);
+                    
+                    const pitch = this.detectPitch(dataArray);
+                    
+                    if (pitch > 0) {
+                        const detectedTongue = this.mapFrequencyToTongue(pitch);
+                        if (detectedTongue) {
+                            this.handleNoteDetection(detectedTongue, pitch);
+                        }
+                    }
+
+                    requestAnimationFrame(analyze);
+                };
+
+                analyze();
+            }
+
+            mapFrequencyToTongue(frequency) {
+                let closestTongue = null;
+                let minDistance = Infinity;
+
+                for (const [tongue, targetFreq] of Object.entries(this.tongueFrequencies)) {
+                    const distance = Math.abs(frequency - targetFreq);
+                    const relativeDistance = distance / targetFreq;
+                    
+                    if (relativeDistance < 0.15 && distance < minDistance) { // Within 15%
+                        minDistance = distance;
+                        closestTongue = parseInt(tongue);
+                    }
+                }
+
+                if (closestTongue) {
+                    const confidence = Math.max(0, 1 - (minDistance / this.tongueFrequencies[closestTongue]));
+                    return { tongue: closestTongue, confidence, frequency };
+                }
+
+                return null;
+            }
+
+            handleNoteDetection(detection, frequency) {
+                const now = Date.now();
+                if (now - this.lastDetectedTime < this.detectionCooldown) {
+                    return;
+                }
+
+                this.lastDetectedTime = now;
+                
+                this.updateAudioMetrics(detection, frequency);
+                this.highlightTongue(detection.tongue);
+                
+                // Check if it matches the current expected note (handle octave markings)
+                let expectedNote = this.notation[this.currentNoteIndex];
+                let expectedTongue;
+                
+                if (typeof expectedNote === 'string') {
+                    expectedTongue = parseInt(expectedNote.replace(/[^0-9]/g, ''));
+                } else {
+                    expectedTongue = expectedNote;
+                }
+                
+                if (detection.tongue === expectedTongue) {
+                    this.advanceNotation();
+                }
+            }
+
+            simulateNoteDetection(tongueNumber) {
+                const frequency = this.tongueFrequencies[tongueNumber];
+                const detection = {
+                    tongue: tongueNumber,
+                    confidence: 0.95,
+                    frequency: frequency
+                };
+                
+                this.handleNoteDetection(detection, frequency);
+            }
+
+            updateAudioMetrics(detection, frequency) {
+                this.elements.frequencyValue.textContent = frequency.toFixed(1);
+                this.elements.noteValue.textContent = this.frequencyToNote(frequency);
+                this.elements.tongueValue.textContent = detection.tongue;
+                this.elements.confidenceValue.textContent = (detection.confidence * 100).toFixed(0) + '%';
+            }
+
+            frequencyToNote(frequency) {
+                const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                const a4 = 440;
+                
+                if (frequency > 0) {
+                    const c0 = a4 * Math.pow(2, -4.75);
+                    const h = Math.round(12 * Math.log2(frequency / c0));
+                    const octave = Math.floor(h / 12);
+                    const n = h % 12;
+                    return notes[n] + octave;
+                }
+                return '---';
+            }
+
+            highlightTongue(tongueNumber) {
+                document.querySelectorAll('.tongue').forEach(t => {
+                    t.classList.remove('playing');
+                });
+
+                const tongue = document.querySelector(`[data-tongue="${tongueNumber}"]`);
+                if (tongue) {
+                    tongue.classList.add('playing');
+                    setTimeout(() => tongue.classList.remove('playing'), 500);
+                }
+            }
+
+            advanceNotation() {
+                this.currentNoteIndex++;
+                if (this.currentNoteIndex >= this.notation.length) {
+                    this.currentNoteIndex = 0;
+                }
+
+                this.updateNotationDisplay();
+                this.updateProgress();
+            }
+
+            updateNotationDisplay() {
+                const notes = document.querySelectorAll('.note');
+                notes.forEach((note, index) => {
+                    note.classList.remove('current', 'next');
+                    
+                    if (index === this.currentNoteIndex) {
+                        note.classList.add('current');
+                    } else if (index === this.currentNoteIndex + 1) {
+                        note.classList.add('next');
+                    }
+                });
+
+                document.querySelectorAll('.tongue').forEach(t => {
+                    t.classList.remove('next');
+                });
+
+                if (this.currentNoteIndex < this.notation.length) {
+                    let nextNote = this.notation[this.currentNoteIndex];
+                    
+                    // Extract tongue number from notation (handle octave markers)
+                    let tongueNumber;
+                    if (typeof nextNote === 'string') {
+                        tongueNumber = parseInt(nextNote.replace(/[^0-9]/g, ''));
+                    } else {
+                        tongueNumber = nextNote;
+                    }
+                    
+                    const tongueElement = document.querySelector(`[data-tongue="${tongueNumber}"]`);
+                    if (tongueElement) {
+                        tongueElement.classList.add('next');
+                    }
+                }
+            }
+
+            updateProgress() {
+                const progress = (this.currentNoteIndex / this.notation.length) * 100;
+                this.elements.progressFill.style.width = progress + '%';
+            }
+
+            updateStatus(type, message) {
+                this.elements.status.className = `status ${type}`;
+                this.elements.status.textContent = message;
+            }
+
+            clearVisualizations() {
+                this.elements.frequencyValue.textContent = '---';
+                this.elements.noteValue.textContent = '---';
+                this.elements.tongueValue.textContent = '---';
+                this.elements.confidenceValue.textContent = '---';
+
+                document.querySelectorAll('.tongue').forEach(t => {
+                    t.classList.remove('playing', 'next');
+                });
+            }
+
+            // Visual Notation Builder Methods
+            toggleNotationBuilder() {
+                this.isBuilderOpen = !this.isBuilderOpen;
+                
+                if (this.isBuilderOpen) {
+                    this.elements.notationBuilder.style.display = 'block';
+                    this.elements.toggleBuilder.textContent = '📝 Hide Builder';
+                    this.initializeBuilder();
+                } else {
+                    this.elements.notationBuilder.style.display = 'none';
+                    this.elements.toggleBuilder.textContent = '📝 Build Notation';
+                }
+            }
+
+            closeNotationBuilder() {
+                this.isBuilderOpen = false;
+                this.elements.notationBuilder.style.display = 'none';
+                this.elements.toggleBuilder.textContent = '📝 Build Notation';
+            }
+
+            initializeBuilder() {
+                this.createTongueSelector();
+                this.updateSequenceDisplay();
+            }
+
+            createTongueSelector() {
+                const selector = this.elements.tongueSelector;
+                selector.innerHTML = '';
+                
+                for (let i = 1; i <= this.drumConfig.noteCount; i++) {
+                    const tongueDiv = document.createElement('div');
+                    tongueDiv.className = 'selector-tongue';
+                    tongueDiv.innerHTML = `
+                        <div class="tongue-number">${i}</div>
+                        <div class="octave-controls">
+                            <div class="octave-btn" data-octave="high" title="High octave">↑</div>
+                            <div class="octave-btn active" data-octave="middle" title="Middle octave">•</div>
+                            <div class="octave-btn" data-octave="low" title="Low octave">↓</div>
+                        </div>
+                    `;
+                    
+                    // Add click handlers
+                    tongueDiv.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('octave-btn')) {
+                            this.setOctaveForTongue(tongueDiv, e.target.dataset.octave);
+                        } else {
+                            this.addNoteToSequence(i, this.getSelectedOctave(tongueDiv));
+                        }
+                    });
+                    
+                    selector.appendChild(tongueDiv);
+                }
+            }
+
+            setOctaveForTongue(tongueDiv, octave) {
+                // Update octave button states
+                tongueDiv.querySelectorAll('.octave-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                tongueDiv.querySelector(`[data-octave="${octave}"]`).classList.add('active');
+            }
+
+            getSelectedOctave(tongueDiv) {
+                const activeBtn = tongueDiv.querySelector('.octave-btn.active');
+                return activeBtn ? activeBtn.dataset.octave : 'middle';
+            }
+
+            addNoteToSequence(tongueNumber, octave) {
+                const note = {
+                    tongue: tongueNumber,
+                    octave: octave
+                };
+                
+                this.builderSequence.push(note);
+                this.updateSequenceDisplay();
+                
+                // Visual feedback
+                this.highlightTongue(tongueNumber);
+            }
+
+            updateSequenceDisplay() {
+                const container = this.elements.sequenceContainer;
+                
+                if (this.builderSequence.length === 0) {
+                    container.innerHTML = '<div class="empty-sequence">Click tongue numbers above to start building your song!</div>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                this.builderSequence.forEach((note, index) => {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'sequence-note';
+                    noteDiv.innerHTML = `
+                        <div class="note-number">${note.tongue}</div>
+                        ${note.octave === 'high' ? '<div class="note-octave high">•</div>' : ''}
+                        ${note.octave === 'low' ? '<div class="note-octave low">•</div>' : ''}
+                        <button class="note-remove" onclick="app.removeNoteFromSequence(${index})">×</button>
+                    `;
+                    
+                    container.appendChild(noteDiv);
+                });
+            }
+
+            removeNoteFromSequence(index) {
+                this.builderSequence.splice(index, 1);
+                this.updateSequenceDisplay();
+            }
+
+            clearBuilderSequence() {
+                this.builderSequence = [];
+                this.updateSequenceDisplay();
+            }
+
+            async playBuilderSequence() {
+                if (this.builderSequence.length === 0) {
+                    alert('Please add some notes to the sequence first!');
+                    return;
+                }
+                
+                if (this.isPlayingSequence) return;
+                
+                this.isPlayingSequence = true;
+                this.elements.playSequence.textContent = '⏸️ Playing...';
+                this.elements.playSequence.disabled = true;
+                
+                for (let i = 0; i < this.builderSequence.length; i++) {
+                    const note = this.builderSequence[i];
+                    
+                    // Highlight current note in sequence
+                    const sequenceNotes = this.elements.sequenceContainer.querySelectorAll('.sequence-note');
+                    sequenceNotes.forEach(n => n.classList.remove('playing'));
+                    if (sequenceNotes[i]) {
+                        sequenceNotes[i].classList.add('playing');
+                    }
+                    
+                    // Highlight drum tongue
+                    this.highlightTongue(note.tongue);
+                    
+                    // Play sound (if we had audio synthesis)
+                    // For now, just visual feedback
+                    
+                    await new Promise(resolve => setTimeout(resolve, 600)); // 600ms per note
+                }
+                
+                // Clear highlights
+                const sequenceNotes = this.elements.sequenceContainer.querySelectorAll('.sequence-note');
+                sequenceNotes.forEach(n => n.classList.remove('playing'));
+                
+                this.isPlayingSequence = false;
+                this.elements.playSequence.textContent = '▶️ Play Sequence';
+                this.elements.playSequence.disabled = false;
+            }
+
+            exportBuilderSequence() {
+                if (this.builderSequence.length === 0) {
+                    alert('Please add some notes to the sequence first!');
+                    return;
+                }
+                
+                // Convert to simple notation format with octave markers
+                this.notation = this.builderSequence.map(note => {
+                    if (note.octave === 'high') {
+                        return `${note.tongue}^`;
+                    } else if (note.octave === 'low') {
+                        return `${note.tongue}v`;
+                    } else {
+                        return note.tongue;
+                    }
+                });
+                
+                this.currentNoteIndex = 0;
+                this.displayNotation();
+                this.updateProgress();
+                this.closeNotationBuilder();
+                
+                this.updateStatus('inactive', `✅ Exported ${this.builderSequence.length} notes from visual builder!`);
+            }
+
+            // Demo Mode for offline use
+            startDemoMode() {
+                this.updateStatus('listening', '🎮 Demo Mode Active! Click drum tongues or use keyboard numbers 1-9 to simulate playing.');
+                
+                // Add keyboard support for demo
+                this.setupKeyboardDemo();
+                
+                // Highlight some tongues as example
+                setTimeout(() => {
+                    this.simulateNoteDetection(1);
+                }, 1000);
+                setTimeout(() => {
+                    this.simulateNoteDetection(3);
+                }, 2000);
+                setTimeout(() => {
+                    this.simulateNoteDetection(5);
+                }, 3000);
+            }
+
+            setupKeyboardDemo() {
+                document.addEventListener('keydown', (event) => {
+                    const key = event.key;
+                    if (key >= '1' && key <= '9') {
+                        const tongueNumber = parseInt(key);
+                        if (tongueNumber <= this.drumConfig.noteCount) {
+                            this.simulateNoteDetection(tongueNumber);
+                        }
+                    } else if (key === '0') {
+                        this.simulateNoteDetection(10);
+                    } else if (key === '-') {
+                        this.simulateNoteDetection(11);
+                    } else if (key === '=') {
+                        this.simulateNoteDetection(12);
+                    }
+                });
+            }
+
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const content = e.target.result;
+                        this.parseNotationFile(content, file.name);
+                    } catch (error) {
+                        console.error('Error reading file:', error);
+                        this.updateStatus('error', '❌ Error reading file. Please check format.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            parseNotationFile(content, filename) {
+                try {
+                    let newNotation = [];
+
+                    if (filename.endsWith('.json')) {
+                        const data = JSON.parse(content);
+                        newNotation = data.notation || data.notes || [];
+                    } else {
+                        // Parse simple text format with octave notation
+                        // Supports: 1, 1^, 1v (high, middle, low octaves)
+                        const tokens = content
+                            .replace(/[^\d\s,\^v]/g, '') // Keep digits, spaces, commas, ^ and v
+                            .split(/[,\s]+/)
+                            .filter(token => token.length > 0);
+                        
+                        newNotation = tokens.map(token => {
+                            // Parse tokens like "1", "3^", "5v"
+                            const match = token.match(/(\d+)([v\^]?)/);
+                            if (match) {
+                                const number = parseInt(match[1]);
+                                const octave = match[2];
+                                
+                                if (number >= 1 && number <= this.drumConfig.noteCount) {
+                                    if (octave === '^') {
+                                        return `${number}^`; // High octave
+                                    } else if (octave === 'v') {
+                                        return `${number}v`; // Low octave
+                                    } else {
+                                        return number; // Middle octave
+                                    }
+                                }
+                            }
+                            return null;
+                        }).filter(note => note !== null);
+                    }
+
+                    if (newNotation.length > 0) {
+                        this.notation = newNotation;
+                        this.currentNoteIndex = 0;
+                        this.displayNotation();
+                        this.updateProgress();
+                        this.updateStatus('inactive', `📁 Loaded ${newNotation.length} notes from ${filename}`);
+                    } else {
+                        throw new Error('No valid notation found');
+                    }
+
+                } catch (error) {
+                    console.error('Error parsing notation:', error);
+                    this.updateStatus('error', '❌ Error parsing notation file. Check format.');
+                }
+            }
+
+            displayNotation() {
+                const display = this.elements.notationDisplay;
+                display.innerHTML = '';
+
+                const line = document.createElement('div');
+                line.className = 'notation-line';
+                
+                const label = document.createElement('strong');
+                label.textContent = 'Loaded Notation: ';
+                line.appendChild(label);
+
+                this.notation.forEach((note, index) => {
+                    const noteSpan = document.createElement('span');
+                    noteSpan.className = 'note';
+                    
+                    // Handle octave markings in display
+                    if (typeof note === 'string') {
+                        if (note.endsWith('^')) {
+                            noteSpan.innerHTML = `${note.slice(0, -1)}<span style="color: #e53e3e; font-size: 10px; vertical-align: super;">•</span>`;
+                        } else if (note.endsWith('v')) {
+                            noteSpan.innerHTML = `${note.slice(0, -1)}<span style="color: #3182ce; font-size: 10px; vertical-align: sub;">•</span>`;
+                        } else {
+                            noteSpan.textContent = note;
+                        }
+                    } else {
+                        noteSpan.textContent = note;
+                    }
+                    
+                    if (index === this.currentNoteIndex) {
+                        noteSpan.classList.add('current');
+                    } else if (index === this.currentNoteIndex + 1) {
+                        noteSpan.classList.add('next');
+                    }
+                    
+                    line.appendChild(noteSpan);
+                });
+
+                display.appendChild(line);
+            }
+        }
+
+        // Initialize the application
+        let app; // Global reference for HTML event handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new AdvancedTongueDrumApp();
+        });
+    </script>
+</body>
+</html>
