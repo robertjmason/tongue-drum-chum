@@ -1217,22 +1217,29 @@
                 this.elements.tabs.forEach(tab => tab.classList.remove('active'));
                 this.elements.tabContents.forEach(content => content.classList.remove('active'));
                 
-                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-                document.getElementById(`${tabName}-tab`).classList.add('active');
+                const tabButton = document.querySelector(`[data-tab="${tabName}"]`);
+                const tabContent = document.getElementById(`${tabName}-tab`);
+                
+                if (tabButton) tabButton.classList.add('active');
+                if (tabContent) tabContent.classList.add('active');
                 
                 // Set layout mode when switching to layout tab
                 this.isLayoutMode = (tabName === 'layout');
                 
                 if (this.isLayoutMode) {
                     // Switch to layout canvas instead of regular drum visual
-                    this.elements.drumVisual.style.display = 'none';
+                    if (this.elements.drumVisual) {
+                        this.elements.drumVisual.style.display = 'none';
+                    }
                     if (this.elements.layoutCanvas) {
                         this.generateLayoutCanvas();
                     }
                 } else {
                     // Show regular drum visual
-                    this.elements.drumVisual.style.display = 'block';
-                    this.updateDrumVisual();
+                    if (this.elements.drumVisual) {
+                        this.elements.drumVisual.style.display = 'block';
+                        this.updateDrumVisual();
+                    }
                 }
             }
 
@@ -1243,32 +1250,37 @@
                 const existingTongues = canvas.querySelectorAll('.draggable-tongue');
                 existingTongues.forEach(tongue => tongue.remove());
                 
-                // Generate draggable tongues
-                for (let i = 1; i <= this.drumConfig.noteCount; i++) {
-                    const tongue = document.createElement('div');
-                    tongue.className = 'draggable-tongue';
-                    tongue.dataset.tongue = i;
-                    tongue.textContent = i;
-                    
-                    // Use custom position if available, otherwise default circular
-                    if (this.customLayout && this.customLayout.positions[i]) {
-                        tongue.style.left = this.customLayout.positions[i].x + 'px';
-                        tongue.style.top = this.customLayout.positions[i].y + 'px';
-                    } else {
-                        // Default circular positioning
-                        const angle = (2 * Math.PI * (i - 1)) / this.drumConfig.noteCount - Math.PI / 2;
-                        const radius = (canvas.offsetWidth / 2) - 60;
-                        const x = canvas.offsetWidth / 2 + Math.cos(angle) * radius - 25;
-                        const y = canvas.offsetHeight / 2 + Math.sin(angle) * radius - 25;
+                // Wait for canvas to be properly sized
+                setTimeout(() => {
+                    // Generate draggable tongues
+                    for (let i = 1; i <= this.drumConfig.noteCount; i++) {
+                        const tongue = document.createElement('div');
+                        tongue.className = 'draggable-tongue';
+                        tongue.dataset.tongue = i;
+                        tongue.textContent = i;
                         
-                        tongue.style.left = x + 'px';
-                        tongue.style.top = y + 'px';
+                        // Use custom position if available, otherwise default circular
+                        if (this.customLayout && this.customLayout.positions[i]) {
+                            tongue.style.left = this.customLayout.positions[i].x + 'px';
+                            tongue.style.top = this.customLayout.positions[i].y + 'px';
+                        } else {
+                            // Default circular positioning
+                            const angle = (2 * Math.PI * (i - 1)) / this.drumConfig.noteCount - Math.PI / 2;
+                            const radius = Math.min(canvas.offsetWidth, canvas.offsetHeight) / 2 - 80;
+                            const centerX = canvas.offsetWidth / 2;
+                            const centerY = canvas.offsetHeight / 2;
+                            const x = centerX + Math.cos(angle) * radius - 25;
+                            const y = centerY + Math.sin(angle) * radius - 25;
+                            
+                            tongue.style.left = Math.max(0, Math.min(x, canvas.offsetWidth - 50)) + 'px';
+                            tongue.style.top = Math.max(0, Math.min(y, canvas.offsetHeight - 50)) + 'px';
+                        }
+                        
+                        canvas.appendChild(tongue);
                     }
                     
-                    canvas.appendChild(tongue);
-                }
-                
-                this.initializeDragAndDrop();
+                    this.initializeDragAndDrop();
+                }, 100); // Small delay to ensure canvas is rendered
             }
 
             createDrumMapping() {
@@ -1334,61 +1346,77 @@
 
             updateDrumVisual() {
                 const visual = this.elements.drumVisual;
+                if (!visual) return;
+                
                 const noteCount = this.drumConfig.noteCount;
                 
                 // Update drum size class
                 visual.className = `drum-visual drum-${noteCount}`;
                 
                 // Update center note
-                this.elements.centerNote.className = `center-note center-${noteCount}`;
+                if (this.elements.centerNote) {
+                    this.elements.centerNote.className = `center-note center-${noteCount}`;
+                }
                 
                 // Clear existing tongues
                 const existingTongues = visual.querySelectorAll('.tongue, .draggable-tongue');
                 existingTongues.forEach(tongue => tongue.remove());
                 
-                // Generate new tongues with custom layout if available
-                if (this.customLayout && this.isLayoutMode) {
-                    this.generateCustomLayout();
-                } else {
-                    this.generateTongueLayout(noteCount);
-                }
-                
-                // Initialize drag and drop if we're in layout mode
-                if (this.isLayoutMode) {
-                    this.initializeDragAndDrop();
+                // Only generate tongues if we're not in layout mode
+                if (!this.isLayoutMode) {
+                    // Generate new tongues with custom layout if available
+                    if (this.customLayout) {
+                        this.generateCustomLayout();
+                    } else {
+                        this.generateTongueLayout(noteCount);
+                    }
                 }
             }
 
             generateCustomLayout() {
                 const visual = this.elements.drumVisual;
+                if (!visual || !this.customLayout) return;
+                
                 const positions = this.customLayout.positions;
                 
                 for (let i = 1; i <= this.drumConfig.noteCount; i++) {
                     const tongue = document.createElement('div');
-                    tongue.className = this.isLayoutMode ? 'draggable-tongue' : `tongue tongue-${this.drumConfig.noteCount}`;
+                    tongue.className = `tongue tongue-${this.drumConfig.noteCount}`;
                     tongue.dataset.tongue = i;
                     tongue.textContent = i;
                     
                     // Use custom position if available, otherwise default
                     if (positions[i]) {
-                        tongue.style.left = positions[i].x + 'px';
-                        tongue.style.top = positions[i].y + 'px';
+                        // Convert absolute positions to relative for the visual drum container
+                        const drumWidth = visual.offsetWidth || 500;
+                        const drumHeight = visual.offsetHeight || 500;
+                        const canvasWidth = 600; // Original canvas width
+                        const canvasHeight = 600; // Original canvas height
+                        
+                        const scaleX = drumWidth / canvasWidth;
+                        const scaleY = drumHeight / canvasHeight;
+                        
+                        const x = positions[i].x * scaleX;
+                        const y = positions[i].y * scaleY;
+                        
+                        tongue.style.left = x + 'px';
+                        tongue.style.top = y + 'px';
+                        tongue.style.position = 'absolute';
                     } else {
                         // Fallback to circular positioning
                         const angle = (2 * Math.PI * (i - 1)) / this.drumConfig.noteCount - Math.PI / 2;
-                        const radius = visual.offsetWidth / 2 - 50;
+                        const radius = (visual.offsetWidth || 300) / 2 - 50;
                         const x = Math.cos(angle) * radius;
                         const y = Math.sin(angle) * radius;
                         
                         tongue.style.left = `calc(50% + ${x}px - 25px)`;
                         tongue.style.top = `calc(50% + ${y}px - 25px)`;
+                        tongue.style.position = 'absolute';
                     }
                     
-                    if (!this.isLayoutMode) {
-                        tongue.addEventListener('click', () => {
-                            this.simulateNoteDetection(i);
-                        });
-                    }
+                    tongue.addEventListener('click', () => {
+                        this.simulateNoteDetection(i);
+                    });
                     
                     visual.appendChild(tongue);
                 }
@@ -1845,24 +1873,64 @@
             selectPreset(presetName) {
                 // Remove selection from other presets
                 document.querySelectorAll('.layout-option').forEach(opt => opt.classList.remove('selected'));
-                event.target.classList.add('selected');
+                
+                // Find and select the clicked preset
+                const clickedPreset = document.querySelector(`[data-preset="${presetName}"]`);
+                if (clickedPreset) {
+                    clickedPreset.classList.add('selected');
+                }
                 
                 const presets = {
                     'rav-d9': { noteCount: 9, key: 'D', scaleType: 'major', rootOctave: 3 },
                     'hapi-c8': { noteCount: 8, key: 'C', scaleType: 'major', rootOctave: 4 },
-                    'panda-d15': { noteCount: 15, key: 'D', scaleType: 'major', rootOctave: 4 },
+                    'panda-d15': { 
+                        noteCount: 15, 
+                        key: 'D', 
+                        scaleType: 'major', 
+                        rootOctave: 4,
+                        customLayout: {
+                            name: "Panda Drum 15-note",
+                            positions: {
+                                1: { x: 300, y: 120 },  // Top
+                                2: { x: 200, y: 180 },  // Top left
+                                3: { x: 400, y: 180 },  // Top right
+                                4: { x: 130, y: 250 },  // Left side
+                                5: { x: 80, y: 350 },   // Far left
+                                6: { x: 140, y: 450 },  // Bottom left
+                                7: { x: 220, y: 520 },  // Bottom left area
+                                8: { x: 300, y: 300 },  // Center (largest)
+                                9: { x: 380, y: 520 },  // Bottom right area
+                                10: { x: 460, y: 450 }, // Bottom right
+                                11: { x: 520, y: 350 }, // Far right
+                                12: { x: 470, y: 250 }, // Right side
+                                13: { x: 350, y: 400 }, // Center-right bottom
+                                14: { x: 250, y: 400 }, // Center-left bottom
+                                15: { x: 300, y: 480 }  // Bottom center
+                            }
+                        }
+                    },
                     'akebono-e11': { noteCount: 11, key: 'E', scaleType: 'akebono', rootOctave: 4 }
                 };
                 
                 const preset = presets[presetName];
                 if (preset) {
-                    this.drumConfig = { ...preset };
+                    this.drumConfig = { 
+                        noteCount: preset.noteCount,
+                        key: preset.key,
+                        scaleType: preset.scaleType,
+                        rootOctave: preset.rootOctave
+                    };
+                    
+                    // Apply custom layout if included
+                    if (preset.customLayout) {
+                        this.customLayout = preset.customLayout;
+                    }
                     
                     // Update form elements
-                    this.elements.noteCount.value = preset.noteCount;
-                    this.elements.drumKey.value = preset.key;
-                    this.elements.scaleType.value = preset.scaleType;
-                    this.elements.rootOctave.value = preset.rootOctave;
+                    if (this.elements.noteCount) this.elements.noteCount.value = preset.noteCount;
+                    if (this.elements.drumKey) this.elements.drumKey.value = preset.key;
+                    if (this.elements.scaleType) this.elements.scaleType.value = preset.scaleType;
+                    if (this.elements.rootOctave) this.elements.rootOctave.value = preset.rootOctave;
                     
                     this.updateDrumConfiguration();
                     this.updateStatus('inactive', `✅ Preset applied: ${preset.noteCount}-note ${preset.key} ${preset.scaleType.replace('_', ' ')} drum.`);
@@ -2345,6 +2413,80 @@
                         this.simulateNoteDetection(12);
                     }
                 });
+            }
+
+            // Drag and Drop Methods (must be defined before generateLayoutCanvas)
+            initializeDragAndDrop() {
+                if (!this.elements.layoutCanvas) return;
+                
+                this.elements.layoutCanvas.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('draggable-tongue')) {
+                        this.startDragging(e.target, e);
+                    }
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (this.draggedElement) {
+                        this.updateDragPosition(e);
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    if (this.draggedElement) {
+                        this.stopDragging();
+                    }
+                });
+            }
+
+            startDragging(element, event) {
+                this.draggedElement = element;
+                element.classList.add('dragging');
+                
+                const rect = this.elements.layoutCanvas.getBoundingClientRect();
+                this.dragOffset = {
+                    x: event.clientX - rect.left - parseInt(element.style.left || 0),
+                    y: event.clientY - rect.top - parseInt(element.style.top || 0)
+                };
+            }
+
+            updateDragPosition(event) {
+                if (!this.draggedElement) return;
+                
+                const rect = this.elements.layoutCanvas.getBoundingClientRect();
+                const x = event.clientX - rect.left - this.dragOffset.x;
+                const y = event.clientY - rect.top - this.dragOffset.y;
+                
+                // Keep within canvas bounds
+                const maxX = this.elements.layoutCanvas.offsetWidth - this.draggedElement.offsetWidth;
+                const maxY = this.elements.layoutCanvas.offsetHeight - this.draggedElement.offsetHeight;
+                
+                const boundedX = Math.max(0, Math.min(x, maxX));
+                const boundedY = Math.max(0, Math.min(y, maxY));
+                
+                this.draggedElement.style.left = boundedX + 'px';
+                this.draggedElement.style.top = boundedY + 'px';
+            }
+
+            stopDragging() {
+                if (!this.draggedElement) return;
+                
+                this.draggedElement.classList.remove('dragging');
+                
+                // Save the new position to custom layout
+                const tongueNumber = parseInt(this.draggedElement.textContent);
+                const x = parseInt(this.draggedElement.style.left);
+                const y = parseInt(this.draggedElement.style.top);
+                
+                if (!this.customLayout) {
+                    this.customLayout = {
+                        name: "Custom Layout",
+                        positions: {}
+                    };
+                }
+                
+                this.customLayout.positions[tongueNumber] = { x, y };
+                
+                this.draggedElement = null;
             }
 
             handleFileUpload(event) {
