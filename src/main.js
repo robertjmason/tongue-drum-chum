@@ -1,4 +1,3 @@
-import './styles/main.css';
 import { AudioManager } from './audio/audioManager.js';
 import { DrumVisualizer } from './components/DrumVisualizer.js';
 import { NotationBuilder } from './components/NotationBuilder.js';

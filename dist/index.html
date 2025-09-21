@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🥁 Advanced Tongue Drum Notation Player</title>
+    <meta name="description" content="Auto-detect your drum configuration or manually configure for any tongue drum">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <script type="module" crossorigin src="/assets/index-i6-30fXZ.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BECJ_GFP.css">
+<link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🥁 Advanced Tongue Drum Notation Player</h1>
+            <p>Auto-detect your drum configuration or manually configure for any tongue drum</p>
+        </div>
+
+        <div class="setup-panel">
+            <div class="setup-tabs">
+                <button class="tab active" data-tab="auto">Auto-Detect Drum</button>
+                <button class="tab" data-tab="manual">Manual Configuration</button>
+                <button class="tab" data-tab="presets">Common Presets</button>
+                <button class="tab" data-tab="layout">Custom Layout</button>
+            </div>
+
+            <div class="tab-content active" id="auto-tab">
+                <div class="auto-detect">
+                    <h3>Automatic Drum Detection</h3>
+                    <p>Play each tongue on your drum to automatically detect the configuration</p>
+                    
+                    <div class="microphone-notice">
+                        <h4>🔐 Microphone Permission Required</h4>
+                        <p>This feature needs access to your microphone to hear your drum. Your browser will ask for permission when you click "Start Auto-Detection".</p>
+                    </div>
+                    
+                    <button class="detect-button" id="startDetection">🎯 Start Auto-Detection</button>
+                    
+                    <div class="detect-instructions">
+                        <h4>Instructions:</h4>
+                        <ol>
+                            <li>Click "Start Auto-Detection" and allow microphone access</li>
+                            <li>Play each tongue on your drum one by one</li>
+                            <li>The app will detect the pitch and map your drum layout</li>
+                            <li>Play tongues multiple times for better accuracy</li>
+                            <li>When done, the app will determine your drum's key and note count</li>
+                        </ol>
+                    </div>
+
+                    <div class="detection-results" id="detectionResults" style="display: none;">
+                        <h4>Detected Configuration:</h4>
+                        <div id="detectedInfo">
+                            <p><strong>Number of Notes:</strong> <span id="detectedCount">0</span></p>
+                            <p><strong>Detected Key:</strong> <span id="detectedKey">Unknown</span></p>
+                            <p><strong>Scale Type:</strong> <span id="detectedScale">Unknown</span></p>
+                        </div>
+                        <div class="detected-notes" id="detectedNotes"></div>
+                        <button id="confirmDetection">✓ Use This Configuration</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="manual-tab">
+                <div class="manual-config">
+                    <div class="config-group">
+                        <label for="noteCount">Number of Notes</label>
+                        <select id="noteCount">
+                            <option value="8">8 Notes</option>
+                            <option value="9">9 Notes</option>
+                            <option value="11">11 Notes</option>
+                            <option value="13">13 Notes</option>
+                            <option value="15" selected>15 Notes</option>
+                            <option value="17">17 Notes</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="drumKey">Drum Key</label>
+                        <select id="drumKey">
+                            <option value="C">C Major</option>
+                            <option value="D" selected>D Major</option>
+                            <option value="E">E Major</option>
+                            <option value="F">F Major</option>
+                            <option value="G">G Major</option>
+                            <option value="A">A Major</option>
+                            <option value="B">B Major</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="scaleType">Scale Type</label>
+                        <select id="scaleType">
+                            <option value="major" selected>Major Scale</option>
+                            <option value="pentatonic_major">Pentatonic Major</option>
+                            <option value="pentatonic_minor">Pentatonic Minor</option>
+                            <option value="natural_minor">Natural Minor</option>
+                            <option value="akebono">Akebono</option>
+                            <option value="hijaz">Hijaz</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="rootOctave">Root Octave</label>
+                        <select id="rootOctave">
+                            <option value="3">3rd Octave</option>
+                            <option value="4" selected>4th Octave</option>
+                            <option value="5">5th Octave</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="applyManualConfig">Apply Configuration</button>
+            </div>
+
+            <div class="tab-content" id="presets-tab">
+                <h3>Common Drum Configurations</h3>
+                <div class="drum-layouts">
+                    <div class="layout-option" data-preset="rav-d9">
+                        <strong>RAV Vast D Major</strong><br>
+                        9 Notes<br>
+                        <small>D3 G3 A3 B3 C#4 D4 E4 F#4 A4</small>
+                    </div>
+                    <div class="layout-option" data-preset="hapi-c8">
+                        <strong>HAPI C Major</strong><br>
+                        8 Notes<br>
+                        <small>C4 D4 E4 F4 G4 A4 B4 C5</small>
+                    </div>
+                    <div class="layout-option" data-preset="panda-d15">
+                        <strong>Panda Drum D Major</strong><br>
+                        15 Notes<br>
+                        <small>Custom asymmetric layout</small>
+                    </div>
+                    <div class="layout-option" data-preset="akebono-e11">
+                        <strong>Akebono E</strong><br>
+                        11 Notes<br>
+                        <small>Japanese pentatonic</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="layout-tab">
+                <div class="layout-builder">
+                    <h3>🎨 Custom Drum Layout Builder</h3>
+                    <p>Click and drag to position tongues exactly like your physical drum</p>
+                    
+                    <div class="layout-controls">
+                        <button id="resetLayout">🔄 Reset to Circle</button>
+                        <button id="loadPhoto">📷 Upload Drum Photo</button>
+                        <button id="saveLayout">💾 Save Layout</button>
+                        <button id="pandaLayout">🐼 Load Panda Drum Layout</button>
+                    </div>
+                    
+                    <div class="layout-canvas" id="layoutCanvas">
+                        <div class="layout-background" id="layoutBackground">
+                            <div class="canvas-instructions">
+                                Drag tongue numbers to match your drum layout
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="layout-info">
+                        <h4>Instructions:</h4>
+                        <ul>
+                            <li>Drag the numbered circles to match your drum's tongue positions</li>
+                            <li>Upload a photo of your drum as a background guide</li>
+                            <li>Use preset layouts for popular drums</li>
+                            <li>Save your custom layout for future use</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="status" class="status inactive">
+                🔧 Configure your drum above, then start listening for real-time detection
+                <div class="status-help">
+                    💡 <strong>No microphone access?</strong> Try the Visual Builder (📝), click drum tongues, or use demo mode! Microphone features require HTTPS.
+                </div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="controls">
+                <div class="config-group">
+                    <label>Upload Notation File</label>
+                    <div class="file-input">
+                        <input type="file" id="fileInput" accept=".txt,.json,.xml">
+                        Choose File
+                    </div>
+                </div>
+
+                <div class="config-group">
+                    <button id="startButton" disabled>🎤 Start Listening</button>
+                    <small>Requires HTTPS for microphone</small>
+                </div>
+
+                <div class="config-group">
+                    <button id="toggleBuilder">📝 Build Notation</button>
+                    <small>Works offline!</small>
+                </div>
+
+                <div class="config-group">
+                    <button id="testMicrophone">🔧 Test Microphone</button>
+                    <small>Check setup</small>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Visual Notation Builder -->
+        <div class="notation-builder" id="notationBuilder" style="display: none;">
+            <div class="builder-header">
+                <h3>🎵 Visual Notation Builder</h3>
+                <p>Click tongue numbers to add notes, use arrows to change octaves</p>
+            </div>
+            
+            <div class="tongue-selector">
+                <div class="selector-grid" id="tongueSelector">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+            
+            <div class="notation-sequence" id="notationSequence">
+                <h4>Your Sequence:</h4>
+                <div class="sequence-container" id="sequenceContainer">
+                    <div class="empty-sequence">Click tongue numbers above to start building your song!</div>
+                </div>
+            </div>
+            
+            <div class="builder-controls">
+                <button id="playSequence">▶️ Play Sequence</button>
+                <button id="clearSequence">🗑️ Clear All</button>
+                <button id="exportSequence">💾 Use This Sequence</button>
+                <button id="closeBuilder">❌ Close Builder</button>
+            </div>
+        </div>
+
+        <div class="notation-area">
+            <div class="drum-container">
+                <div class="drum-visual drum-15" id="drumVisual">
+                    <div class="center-note center-15" id="centerNote">0</div>
+                    <!-- Tongues will be dynamically generated -->
+                </div>
+            </div>
+
+            <div class="notation-display" id="notationDisplay">
+                <div class="notation-line">
+                    <strong>Sample 15-Note D Major Sequence:</strong>
+                    <span class="note">1</span><span class="note">3</span><span class="note">5</span><span class="note">7</span><span class="note">9</span>
+                    <span class="note">11</span><span class="note">13</span><span class="note">15</span><span class="note">13</span><span class="note">11</span>
+                    <span class="note">9</span><span class="note">7</span><span class="note">5</span><span class="note">3</span><span class="note">1</span>
+                </div>
+                <div class="notation-line octave-example">
+                    <strong>With Octave Markings:</strong>
+                    <span class="note">1</span><span class="note">3^</span><span class="note">5</span><span class="note">7v</span><span class="note">9^</span>
+                    <span class="note">11</span><span class="note">13^</span><span class="note">15v</span><span class="note">13</span><span class="note">11^</span>
+                </div>
+                <div class="notation-help">
+                    Click any tongue number on the drum above to test, or try the Visual Builder!
+                </div>
+            </div>
+        </div>
+
+        <div class="audio-info">
+            <h3>Real-Time Audio Analysis</h3>
+            <div class="audio-metrics">
+                <div class="metric">
+                    <div class="metric-value" id="frequencyValue">---</div>
+                    <div class="metric-label">Frequency (Hz)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="noteValue">---</div>
+                    <div class="metric-label">Detected Note</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="tongueValue">---</div>
+                    <div class="metric-label">Tongue Number</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="confidenceValue">---</div>
+                    <div class="metric-label">Confidence</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="drumInfoValue">15-Note D Major</div>
+                    <div class="metric-label">Drum Configuration</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for photo uploads -->
+    <input type="file" id="photoUpload" class="photo-upload" accept="image/*">
+
+</body>
+</html>
