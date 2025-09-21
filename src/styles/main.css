@@ -1,0 +1,5 @@
+/* Main stylesheet - imports all component styles */
+@import './base.css';
+@import './components.css';
+@import './drum.css';
+@import './builder.css';

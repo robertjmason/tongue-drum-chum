@@ -1,0 +1,360 @@
+/* Visual Notation Builder styles */
+
+.notation-builder {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.builder-header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.builder-header h3 {
+  color: #667eea;
+  margin-bottom: 10px;
+}
+
+.tongue-selector {
+  margin-bottom: 30px;
+}
+
+.selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 15px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.selector-tongue {
+  position: relative;
+  background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.selector-tongue:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  border-color: #667eea;
+}
+
+.selector-tongue.selected {
+  background: linear-gradient(145deg, #667eea, #5a67d8);
+  color: white;
+  border-color: #4c51bf;
+}
+
+.tongue-number {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.octave-controls {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.octave-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.octave-btn:hover {
+  background: #f1f3f4;
+}
+
+.octave-btn.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.notation-sequence {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.sequence-container {
+  min-height: 80px;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.empty-sequence {
+  color: #6c757d;
+  font-style: italic;
+  width: 100%;
+  text-align: center;
+}
+
+.sequence-note {
+  background: white;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  padding: 10px 15px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.sequence-note:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.sequence-note.playing {
+  background: #48bb78;
+  color: white;
+  border-color: #38a169;
+}
+
+.note-number {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.note-octave {
+  position: absolute;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.note-octave.high {
+  top: 2px;
+  right: 4px;
+  color: #e53e3e;
+}
+
+.note-octave.low {
+  bottom: 2px;
+  right: 4px;
+  color: #3182ce;
+}
+
+.note-remove {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  background: #e53e3e;
+  color: white;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  display: none;
+}
+
+.sequence-note:hover .note-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.builder-controls {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.builder-controls button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+#playSequence {
+  background: #48bb78;
+  color: white;
+}
+
+#playSequence:hover:not(:disabled) {
+  background: #38a169;
+}
+
+#clearSequence {
+  background: #e53e3e;
+  color: white;
+}
+
+#clearSequence:hover {
+  background: #c53030;
+}
+
+#exportSequence {
+  background: #667eea;
+  color: white;
+}
+
+#exportSequence:hover {
+  background: #5a67d8;
+}
+
+#closeBuilder {
+  background: #6c757d;
+  color: white;
+}
+
+#closeBuilder:hover {
+  background: #5a6268;
+}
+
+/* Layout Builder styles */
+.layout-builder {
+  text-align: center;
+}
+
+.layout-controls {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.layout-controls button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+#resetLayout {
+  background: #6c757d;
+  color: white;
+}
+
+#loadPhoto {
+  background: #17a2b8;
+  color: white;
+}
+
+#saveLayout {
+  background: #28a745;
+  color: white;
+}
+
+#pandaLayout {
+  background: #fd7e14;
+  color: white;
+}
+
+.layout-canvas {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  margin: 20px auto;
+  border: 3px solid #dee2e6;
+  border-radius: 50%;
+  background: #f8f9fa;
+  overflow: hidden;
+  user-select: none;
+}
+
+.layout-background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.canvas-instructions {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #6c757d;
+  font-style: italic;
+  text-align: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.draggable-tongue {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(145deg, #667eea, #5a67d8);
+  border: 3px solid #4c51bf;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: move;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.draggable-tongue:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+
+.draggable-tongue.dragging {
+  transform: scale(1.2);
+  z-index: 20;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+}
+
+.layout-info {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.layout-info ul {
+  margin-left: 20px;
+  line-height: 1.6;
+}
+
+.drum-photo-preview {
+  max-width: 100%;
+  max-height: 400px;
+  margin: 15px 0;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}

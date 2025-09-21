@@ -1,0 +1,111 @@
+/* Base styles and CSS reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: #333;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.header {
+  text-align: center;
+  color: white;
+  margin-bottom: 30px;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Common form elements */
+select, input, button {
+  padding: 12px 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+select:focus, input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+button {
+  cursor: pointer;
+  font-weight: 600;
+  border: none;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Status messages */
+.status {
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px 0;
+  font-weight: 600;
+}
+
+.status.listening { 
+  background: #c6f6d5; 
+  color: #22543d; 
+  border: 2px solid #9ae6b4; 
+}
+
+.status.error { 
+  background: #fed7d7; 
+  color: #742a2a; 
+  border: 2px solid #fc8181; 
+}
+
+.status.inactive { 
+  background: #e2e8f0; 
+  color: #4a5568; 
+  border: 2px solid #cbd5e0; 
+}
+
+.status.detecting { 
+  background: #bee3f8; 
+  color: #2a69ac; 
+  border: 2px solid #90cdf4; 
+}
+
+.status-help {
+  font-size: 0.9em; 
+  margin-top: 8px; 
+  opacity: 0.8;
+}
+
+/* Progress bar */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
+}
