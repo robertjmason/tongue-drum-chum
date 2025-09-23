@@ -148,3 +148,186 @@
   color: #666;
   margin-top: 10px;
 }
+
+/* Octave dot indicators for proper 1-7 notation system */
+.octave-dot {
+  font-size: 0.6em;
+  color: #2d3748;
+  font-weight: bold;
+}
+
+.octave-dot.low-octave {
+  /* Dot below the number - positioned at bottom */
+  position: relative;
+  top: 8px;
+  left: -3px;
+}
+
+.octave-dot.high-octave {
+  /* Dot above the number - positioned at top */
+  position: relative;
+  top: -8px;
+  right: -3px;
+}
+
+/* Ensure tongue numbers are properly spaced for dots */
+.tongue {
+  line-height: 1.2;
+  padding: 2px;
+}
+
+/* Adjust center note styling for new symbol */
+.center-note {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+/* Drum photo calibration styles */
+.calibration-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 350px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  z-index: 1000;
+  display: none;
+  border: 2px solid #e2e8f0;
+}
+
+.calibration-content {
+  padding: 20px;
+}
+
+.calibration-content h3 {
+  margin: 0 0 10px 0;
+  color: #2d3748;
+  font-size: 18px;
+}
+
+.calibration-content p {
+  margin: 0 0 15px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.calibration-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.calibration-info {
+  padding: 10px;
+  background: #f7fafc;
+  border-radius: 6px;
+  border-left: 4px solid #48bb78;
+}
+
+.calibration-info span {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.calibration-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.calibration-buttons .btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #48bb78;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #38a169;
+}
+
+.btn-primary:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e0;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #718096;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-outline:hover {
+  background: #f7fafc;
+}
+
+.calibration-settings {
+  padding: 10px;
+  background: #f7fafc;
+  border-radius: 6px;
+}
+
+.calibration-settings label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #4a5568;
+}
+
+.calibration-settings input[type="range"] {
+  flex: 1;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  outline: none;
+}
+
+.calibration-settings input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  background: #48bb78;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+/* Calibration markers */
+.calibration-marker {
+  animation: markerAppear 0.3s ease-out;
+}
+
+@keyframes markerAppear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Photo overlay effects */
+.drum-photo-overlay {
+  transition: opacity 0.3s ease;
+}

@@ -149,6 +149,33 @@
                         <button id="pandaLayout">🐼 Load Panda Drum Layout</button>
                     </div>
                     
+                    <div class="photo-detection-controls" id="photoDetectionControls" style="display: none;">
+                        <h4>🤖 AI Tongue Detection</h4>
+                        <div class="detection-input-group">
+                            <label for="expectedTongueCount">Number of tongues on your drum:</label>
+                            <select id="expectedTongueCount">
+                                <option value="8">8 Tongues</option>
+                                <option value="9">9 Tongues</option>
+                                <option value="11">11 Tongues</option>
+                                <option value="13">13 Tongues</option>
+                                <option value="15" selected>15 Tongues</option>
+                                <option value="17">17 Tongues</option>
+                                <option value="20">20+ Tongues</option>
+                            </select>
+                        </div>
+                        <button id="detectTongues">🎯 Detect Tongues</button>
+                        <button id="clearSelection" style="display: none;">🔄 Clear Selection</button>
+                        <div class="detection-instructions">
+                            <p><strong>Instructions:</strong></p>
+                            <ol>
+                                <li>Select the number of tongues on your drum</li>
+                                <li>Click "Detect Tongues" to find them automatically</li>
+                                <li>Click on the highlighted tongues to select them in playing order</li>
+                                <li>Selected tongues will show numbers (1, 2, 3, etc.)</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
                     <div class="layout-canvas" id="layoutCanvas">
                         <div class="layout-background" id="layoutBackground">
                             <div class="canvas-instructions">
@@ -180,10 +207,10 @@
         <div class="control-panel">
             <div class="controls">
                 <div class="config-group">
-                    <label>Upload Notation File</label>
+                    <label>Upload File (Notation or Drum Photo)</label>
                     <div class="file-input">
-                        <input type="file" id="fileInput" accept=".txt,.json,.xml">
-                        Choose File
+                        <label for="fileInput" class="file-button">Choose File</label>
+                        <input type="file" id="fileInput" accept=".txt,.json,.xml,.jpg,.jpeg,.png,.webp" style="display: none;">
                     </div>
                 </div>
 

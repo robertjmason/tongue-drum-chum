@@ -1,5 +1,9 @@
-// EssentiaJS import for professional-grade audio analysis
 import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
+import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
+
+// Debug: Log what we actually imported
+console.log('🔍 DEBUG - Essentia:', typeof Essentia, Essentia);
+console.log('🔍 DEBUG - EssentiaWASM:', typeof EssentiaWASM, EssentiaWASM);
 
 /**
  * Enhanced Web Audio API manager powered by EssentiaJS
@@ -45,6 +49,7 @@ export class AudioManager {
 
   /**
    * Initialize EssentiaJS for advanced audio analysis
+   * Uses the getting-started.md pattern: new Essentia(EssentiaWASM)
    */
   async initializeEssentia() {
     if (this.essentiaInitializing || this.essentiaInitialized) return this.essentiaInitialized;
@@ -54,17 +59,19 @@ export class AudioManager {
     try {
       console.log('🎵 Initializing EssentiaJS for professional audio analysis...');
       
-      // Initialize Essentia with proper configuration
-      this.essentia = new Essentia();
+      // Use the getting-started.md pattern: new Essentia(EssentiaWASM)
+      // EssentiaWASM is already the WASM module object, not a function
+      this.essentia = new Essentia(EssentiaWASM);
       
-      // Verify EssentiaJS is ready
-      if (this.essentia && typeof this.essentia.Windowing === 'function') {
+      // Verify EssentiaJS is ready and algorithms are available
+      if (this.essentia && typeof this.essentia.Windowing === 'function' && this.essentia.algorithmNames) {
         console.log('✅ EssentiaJS successfully initialized!');
+        console.log(`📊 Available algorithms: ${this.essentia.algorithmNames.length}`);
         this.essentiaInitialized = true;
         this.essentiaInitializing = false;
         return true;
       } else {
-        throw new Error('EssentiaJS methods not available');
+        throw new Error('EssentiaJS methods not available after initialization');
       }
     } catch (error) {
       console.warn('⚠️ EssentiaJS initialization failed, using Web Audio API fallback:', error);
@@ -216,42 +223,126 @@ export class AudioManager {
    */
   analyzeWithEssentia() {
     try {
+      // STEP 1: Check audio amplitude to avoid processing silence/noise
+      const rms = Math.sqrt(this.audioBuffer.reduce((sum, val) => sum + val * val, 0) / this.audioBuffer.length);
+      const amplitudeThreshold = 0.01; // Minimum volume threshold
+      
+      if (rms < amplitudeThreshold) {
+        console.log('🔇 SILENCE DETECTED - RMS:', rms.toFixed(4), 'below threshold:', amplitudeThreshold);
+        return; // Skip processing for silence/low volume
+      }
+      
+      console.log('🎵 AUDIO DETECTED - RMS:', rms.toFixed(4), 'proceeding with EssentiaJS analysis...');
+      
+      // Convert JS Float32Array to std::vector<float> for WASM binding
+      const inputSignalVector = this.essentia.arrayToVector(this.audioBuffer);
+      
       // Apply windowing to reduce spectral leakage
-      const windowedSignal = this.essentia.Windowing(this.audioBuffer, 'hann');
+      const windowedResult = this.essentia.Windowing(inputSignalVector, 'hann');
+      console.log('🔍 DEBUG - Windowing result:', typeof windowedResult, Object.keys(windowedResult), windowedResult);
+      
+      // Extract the actual windowed signal from the result object
+      const windowedSignal = windowedResult.frame; // Common EssentiaJS output property
+      console.log('🔍 DEBUG - Windowed signal:', typeof windowedSignal, windowedSignal);
       
       // Compute FFT spectrum for spectral analysis
-      const spectrum = this.essentia.Spectrum(windowedSignal);
-      
-      // Detect pitch using YIN algorithm (more accurate for monophonic instruments like tongue drums)
-      const pitchYin = this.essentia.PitchYin(this.audioBuffer, 0.15); // Slightly higher threshold for drums
-      
-      // Also try PitchYinFFT for comparison (works better for some frequencies)
-      let pitchYinFFT = null;
+      console.log('🔍 DEBUG - About to call Spectrum() with:', windowedSignal);
+      let spectrumResult;
       try {
-        pitchYinFFT = this.essentia.PitchYinFFT(this.audioBuffer, 4096, 0.15);
-      } catch (fftError) {
-        console.log('PitchYinFFT not available, using PitchYin only');
+        spectrumResult = this.essentia.Spectrum(windowedSignal);
+        console.log('🔍 DEBUG - Spectrum result:', typeof spectrumResult, Object.keys(spectrumResult), spectrumResult);
+      } catch (spectrumError) {
+        console.log('🔍 DEBUG - Spectrum() error details:', spectrumError);
+        throw spectrumError;
       }
       
-      // Find spectral peaks for harmonic analysis
-      const spectralPeaks = this.essentia.SpectralPeaks(spectrum);
+      // Extract the actual spectrum vector from the result object
+      const spectrumVector = spectrumResult.spectrum;
+      console.log('🔍 DEBUG - Spectrum vector:', typeof spectrumVector, spectrumVector);
       
-      // Use the most reliable pitch estimate
-      let finalPitch = pitchYin;
-      if (pitchYinFFT && Math.abs(pitchYinFFT - pitchYin) < 20) {
-        // If both algorithms agree (within 20Hz), average them
-        finalPitch = (pitchYin + pitchYinFFT) / 2;
-      } else if (pitchYinFFT && pitchYin === 0) {
-        // If YIN failed but YinFFT has a result
-        finalPitch = pitchYinFFT;
+      // Try multiple pitch detection approaches (PitchYin has WASM binding issues)
+      let finalPitch = 0;
+      
+      // APPROACH 1: Try PitchYinFFT first (often more stable)
+      try {
+        console.log('🔍 DEBUG - Trying PitchYinFFT (more stable than PitchYin)...');
+        const pitchYinFFTResult = this.essentia.PitchYinFFT(inputSignalVector);
+        console.log('✅ SUCCESS - PitchYinFFT result:', typeof pitchYinFFTResult, Object.keys(pitchYinFFTResult), pitchYinFFTResult);
+        
+        const detectedPitch = pitchYinFFTResult.pitch || pitchYinFFTResult;
+        const confidence = pitchYinFFTResult.pitchConfidence || 0;
+        const minConfidence = 0.5; // Minimum confidence threshold
+        
+        console.log('🔍 CONFIDENCE CHECK - Pitch:', detectedPitch, 'Confidence:', confidence.toFixed(3), 'Min required:', minConfidence);
+        
+        if (confidence >= minConfidence && detectedPitch > 50 && detectedPitch < 2000) {
+          finalPitch = detectedPitch;
+          console.log('✅ BREAKTHROUGH - High-confidence PitchYinFFT:', finalPitch, 'Hz, confidence:', confidence.toFixed(3));
+        } else {
+          console.log('❌ LOW CONFIDENCE/INVALID - Pitch:', detectedPitch, 'Confidence:', confidence.toFixed(3), '(threshold:', minConfidence, ')');
+        }
+      } catch (pitchYinFFTError) {
+        console.log('❌ PitchYinFFT failed, trying alternative approaches:', pitchYinFFTError.message);
+        
+        // APPROACH 2: Try Predominant Fundamental Frequency 
+        try {
+          console.log('🔍 DEBUG - Trying PredominantPitchMelodia (robust pitch detection)...');
+          const pitchMelodiaResult = this.essentia.PredominantPitchMelodia(inputSignalVector);
+          console.log('✅ SUCCESS - PredominantPitchMelodia result:', typeof pitchMelodiaResult, Object.keys(pitchMelodiaResult));
+          finalPitch = pitchMelodiaResult.pitch || pitchMelodiaResult[0] || 0;
+          console.log('✅ ALTERNATIVE SUCCESS - PredominantPitchMelodia pitch:', finalPitch);
+        } catch (melodiaError) {
+          console.log('❌ PredominantPitchMelodia failed, using spectral peak analysis:', melodiaError.message);
+          // Will fall back to spectral peak analysis below
+        }
       }
       
+      // Get spectral peaks for harmonic analysis
+      console.log('🔍 DEBUG - About to call SpectralPeaks() with:', spectrumVector);
+      const spectralPeaksResult = this.essentia.SpectralPeaks(spectrumVector);
+      console.log('🔍 DEBUG - SpectralPeaks result:', typeof spectralPeaksResult, Object.keys(spectralPeaksResult), spectralPeaksResult);
+      
+      // CRITICAL FIX: Convert EssentiaJS VectorFloat to JavaScript arrays
+      const convertVectorToArray = (vector) => {
+        if (!vector || typeof vector.size !== 'function') return [];
+        const array = [];
+        const size = vector.size();
+        for (let i = 0; i < size; i++) {
+          array.push(vector.get(i));
+        }
+        return array;
+      };
+
+      const spectralPeaks = {
+        frequency: convertVectorToArray(spectralPeaksResult.frequencies || spectralPeaksResult.frequency),
+        magnitude: convertVectorToArray(spectralPeaksResult.magnitudes || spectralPeaksResult.magnitude)
+      };
+      
+      console.log('✅ CONVERTED - SpectralPeaks arrays:', spectralPeaks.frequency.length, 'frequencies,', spectralPeaks.magnitude.length, 'magnitudes');
+
+      // If no pitch detected yet from algorithms, try spectral peak analysis
+      if (finalPitch === 0 && spectralPeaks.frequency.length > 0) {
+        // Find the most prominent spectral peak as pitch estimate
+        let maxMagnitudeIndex = 0;
+        for (let i = 1; i < spectralPeaks.magnitude.length; i++) {
+          if (spectralPeaks.magnitude[i] > spectralPeaks.magnitude[maxMagnitudeIndex]) {
+            maxMagnitudeIndex = i;
+          }
+        }
+        finalPitch = spectralPeaks.frequency[maxMagnitudeIndex];
+        console.log('🎵 SPECTRAL PEAK FALLBACK - Detected pitch:', finalPitch, 'Hz');
+      }
+
+      // Only process if we have a reasonable pitch
       if (finalPitch && finalPitch > 50 && finalPitch < 2000) {
+        console.log('🎯 FINAL SUCCESS - Processing pitch:', finalPitch, 'Hz with', spectralPeaks.frequency.length, 'spectral peaks');
         this.processPitchDetection(finalPitch, {
           frequency: spectralPeaks.frequency || [],
           magnitude: spectralPeaks.magnitude || [],
-          confidence: 0.8 // EssentiaJS provides high confidence
+          confidence: 0.9 // High confidence with EssentiaJS
         });
+      } else {
+        console.log('⚠️ No valid pitch detected, finalPitch:', finalPitch);
       }
     } catch (error) {
       console.warn('EssentiaJS analysis failed, falling back to Web Audio API:', error);
