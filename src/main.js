@@ -519,10 +519,10 @@ class TongueDrumApp {
       overlay.dataset.tongueIndex = index;
       
       // Calculate position relative to the background container
-      const x = (tongue.x / this.drumPhoto.width) * backgroundRect.width;
-      const y = (tongue.y / this.drumPhoto.height) * backgroundRect.height;
-      const width = (tongue.width / this.drumPhoto.width) * backgroundRect.width;
-      const height = (tongue.height / this.drumPhoto.height) * backgroundRect.height;
+      const x = (tongue.boundingRect.x / this.drumPhoto.width) * backgroundRect.width;
+      const y = (tongue.boundingRect.y / this.drumPhoto.height) * backgroundRect.height;
+      const width = (tongue.boundingRect.width / this.drumPhoto.width) * backgroundRect.width;
+      const height = (tongue.boundingRect.height / this.drumPhoto.height) * backgroundRect.height;
       
       overlay.style.left = `${x - width/2}px`;
       overlay.style.top = `${y - height/2}px`;
@@ -712,42 +712,21 @@ class TongueDrumApp {
    * Convert OpenCV.js detection results to application format
    */
   convertOpenCVResultsToTongueShapes(openCVResults, expectedCount) {
-    const tongueShapes = [];
-    
     // Sort by confidence and take the best results
     const sortedResults = openCVResults
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, Math.min(expectedCount + 5, openCVResults.length)); // Allow some extra for filtering
     
-    sortedResults.forEach((result, index) => {
-      const tongueShape = {
-        x: result.centroid.x,
-        y: result.centroid.y,
-        width: result.boundingRect.width,
-        height: result.boundingRect.height,
-        area: result.properties.area,
-        confidence: result.confidence,
-        aspectRatio: result.properties.aspectRatio,
-        solidity: result.properties.solidity,
-        // Additional properties for advanced analysis
-        boundingRect: result.boundingRect,
-        contourPoints: result.points,
-        properties: result.properties
-      };
-      
-      tongueShapes.push(tongueShape);
-    });
-    
     // If we have more results than expected, filter by confidence threshold
-    if (tongueShapes.length > expectedCount) {
-      const confidenceThreshold = 0.1; // Very low threshold - accept most candidates
-      const filteredShapes = tongueShapes.filter(shape => shape.confidence >= confidenceThreshold);
+    if (sortedResults.length > expectedCount) {
+      const confidenceThreshold = 0.5; // Filter out low-confidence results
+      const filteredShapes = sortedResults.filter(shape => shape.confidence >= confidenceThreshold);
       
       // Take the best results up to expected count
       return filteredShapes.slice(0, expectedCount);
     }
     
-    return tongueShapes;
+    return sortedResults;
   }
 
   /**
