@@ -27,7 +27,7 @@ export class OpenCVTongueDetector {
 			minSolidity: 0.4, // Lowered to be more forgiving for irregular or partially detected shapes
 			// maxCircularity: 1.0, // Set to 1.0 (perfect circle) to be as permissive as possible for circularity
 			// Tongues are not perfect circles, so we need a more flexible upper bound for circularity.
-			maxCircularity: 0.8, // Adjusted based on typical tongue shapes, allowing for less than perfect circles
+			maxCircularity: 1.0, // Adjusted based on typical tongue shapes, allowing for less than perfect circles
 			minCircularity: 0.1, // Added a lower bound to filter out very irregular shapes
 
 			// Bilateral filter - Slightly increased for robust noise reduction while preserving edges
@@ -148,6 +148,42 @@ export class OpenCVTongueDetector {
 	}
 
 	/**
+	 * Calculate confidence score for a given tongue candidate.
+	 * @param {number} area - The area of the tongue contour.
+	 * @param {number} aspectRatio - The aspect ratio of the tongue.
+	 * @param {number} solidity - The solidity of the tongue shape.
+	 * @param {number} circularity - The circularity of the tongue shape.
+	 * @returns {number} Confidence score between 0 and 1.
+	 */
+	calculateTongueConfidence(area, aspectRatio, solidity, circularity) {
+		let confidence = 0.3; // Lower base confidence, earned through properties
+
+		// Aspect ratio score (ideal is between 1.2 and 4.0)
+		if (aspectRatio > 1.2 && aspectRatio < 4.0) {
+			confidence += 0.3;
+		}
+
+		// Solidity score (higher is better, ideal > 0.8)
+		if (solidity > 0.8) {
+			confidence += 0.2;
+		} else if (solidity > 0.6) {
+			confidence += 0.1;
+		}
+
+		// Circularity score (lower is often better for tongues, but not too low)
+		if (circularity > 0.2 && circularity < 0.7) {
+			confidence += 0.2;
+		}
+
+		// Area score
+		if (area > 500 && area < 70000) {
+		    confidence += 0.2
+		}
+
+		return Math.min(1.0, confidence);
+	}
+
+	/**
 	 * Intelligent contour filtering for tongue-like shapes
 	 * @param {cv.MatVector} contours - Detected contours from OpenCV
 	 * @returns {Array} Filtered tongue candidate shapes with confidence scores
@@ -209,15 +245,21 @@ export class OpenCVTongueDetector {
 
 				if (isTongueCandidate) {
 					const rect = cv.boundingRect(contour);
+					const confidence = this.calculateTongueConfidence(area, aspectRatio, solidity, circularity);
 					tongueShapes.push({
-						x: rect.x,
-						y: rect.y,
-						width: rect.width,
-						height: rect.height,
-						area: area,
-						circularity: circularity,
-						solidity: solidity,
-						aspectRatio: aspectRatio,
+						confidence: confidence,
+						centroid: {
+							x: rect.x + rect.width / 2,
+							y: rect.y + rect.height / 2
+						},
+						boundingRect: rect,
+						properties: {
+							area: area,
+							aspectRatio: aspectRatio,
+							solidity: solidity,
+							circularity: circularity,
+							compactness: compactness
+						}
 						// You might want to store the actual contour or a simplified approximation for drawing/interaction
 						// contour: contour.clone() // Clone if you need to keep the Mat object, remember to delete it later
 					});
